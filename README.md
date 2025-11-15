@@ -1,5 +1,9 @@
 # TauTUI
 
+<p align="center">
+  <img src="tautui-logo.png" alt="TauTUI logo" width="640">
+</p>
+
 <div align="center">
 
 <p align="center">
