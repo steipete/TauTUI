@@ -17,6 +17,7 @@ These tweaks are low-to-medium effort improvements identified during the port. T
 **Action:**
 - `ProcessTerminal` now decodes xterm CSI modifiers (Shift/Ctrl/Option/Meta) and Meta-prefix sequences (ESC+key), emitting normalized `TerminalInput.key` events.
 - Option variants for arrows/backspace/delete are surfaced as modifiers so components can offer word motions/deletions without manual escape parsing.
+- Added unit coverage for Meta-prefix and CSI modifier decoding using `parseForTests` helper.
 **Benefit:** Cleaner component code, fewer corner cases, easier to add new shortcuts.
 
 ## 4) Strengthen Markdown Table Fidelity (Done)
