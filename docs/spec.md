@@ -49,7 +49,7 @@ No Windows support is planned; Package.swift and README must state this explicit
 - Editor behaviors: autocomplete overlay, bracketed paste markers, large paste substitution, slash command shortcuts, complex key handling, fake cursor rendering
 - Utilities: visible width, ANSI-safe wrapping, MIME filters
 - Examples: Chat demo and Key tester
-- Tests: Markdown rendering (nested lists, tables), rendering diffs, autocomplete, input/editor flows, loader timer
+- Tests: Markdown rendering (nested lists, tables, code fences/quotes), renderer diffs/snapshots, autocomplete (slash + file ordering/attachment filters), input/editor flows (Ctrl+A/E, word movement, paste markers including multiples), loader timer
 
 ## 6. Terminal Abstraction
 ### 6.1 Protocol (`Terminal`)
