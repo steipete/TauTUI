@@ -29,11 +29,10 @@ These tweaks are low-to-medium effort improvements identified during the port. T
 **Action:** Added `TUIRenderingTests` for first render, resize (full clear + sync), and partial diff (`VirtualTerminal` logs). Serves as smoke snapshots for core renderer paths.
 **Next:** Consider file-backed fixtures for broader component coverage (markdown/select-list) if renderer churn increases.
 
-## 6) Sendable Hygiene for Demos (Low)
-**Problem:** ChatDemo needed identity lookup to avoid warnings when capturing non-Sendable UI objects.
-**Plan:**
-- Keep demo state `@MainActor`; add a tiny wrapper type (e.g., `MainActorLoaderHandle`) or mark Loader demo-only extensions as `@MainActor`.
-**Benefit:** Zero warnings without identity workarounds.
+## 6) Sendable Hygiene for Demos (Done)
+**Problem:** ChatDemo used identity lookup to avoid Sendable warnings when capturing UI objects.
+**Action:** Kept `ChatViewModel` on `@MainActor` and replaced detached task/identity lookup with a `Task { @MainActor ... }` sleep to update the loader directly without Sendable warnings.
+**Benefit:** Demo remains warning-free with clearer intent and no identity hacks.
 
 ## 7) Align Option+Delete Forward (Done)
 **Problem:** Option+backspace was implemented; option+delete-forward differed across terminals.

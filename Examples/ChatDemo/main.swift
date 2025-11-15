@@ -52,7 +52,6 @@ struct ChatDemo {
 
             let loader = Loader(tui: vm.tui, message: "Thinking...")
             vm.messages.addChild(loader)
-            let loaderID = ObjectIdentifier(loader)
 
             let responses = [
                 "That's interesting! Tell me more.",
@@ -61,13 +60,10 @@ struct ChatDemo {
                 "Could you elaborate on that?"
             ]
             let reply = responses.randomElement() ?? "Thanks for sharing!"
-            DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
-                Task { @MainActor in
-                    // Resolve loader by identity on the main actor to avoid capturing non-Sendable state.
-                    if let found = vm.messages.children.first(where: { ObjectIdentifier($0) == loaderID }) as? Loader {
-                        vm.removeLoaderAndAppendReply(loader: found, reply: reply)
-                    }
-                }
+            Task { @MainActor [weak vm, loader, reply] in
+                guard let vm else { return }
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                vm.removeLoaderAndAppendReply(loader: loader, reply: reply)
             }
         }
 
