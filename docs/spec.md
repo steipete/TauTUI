@@ -97,7 +97,7 @@ public protocol Terminal: AnyObject {
 | `Text` | Struct storing `text`, `padding`, `background`; caches last render; uses `swift-displaywidth` for wrapping. Properties w/ `didSet` to invalidate cache. (✅ implemented) |
 | `Markdown` | Uses `swift-markdown` AST; replicates headings, lists, tables, inline styling, padding, and caching. (✅ implemented) |
 | `Input` | Maintains cursor index, horizontal scroll window, `onSubmit`. Exposes `value` as `var`. (✅ implemented) |
-| `Editor` | See §9. (baseline multi-line implementation in progress) |
+| `Editor` | Multi-line buffer, autocomplete hooks, paste markers, ctrl/option shortcuts ported; further parity polish (e.g., option-delete-forward) tracked in refactor doc. (✅ implemented) |
 | `SelectList` | Maintains filtered items, selection window, `onSelect`/`onCancel`. Supports optional descriptions + scroll indicators. (✅ implemented) |
 | `Loader` | Subclass/compose `Text` to render spinner; uses `DispatchSourceTimer` for 80 ms ticks. (✅ implemented) |
 | `Spacer` | Simple struct returning N blank lines. (✅ implemented) |

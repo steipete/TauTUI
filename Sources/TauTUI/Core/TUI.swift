@@ -12,9 +12,6 @@ public final class TUI: Container {
     private var cursorRow: Int = 0
     private var renderRequested = false
 
-    private let syncStart = "\u{001B}[?2026h"
-    private let syncEnd = "\u{001B}[?2026l"
-
     public init(terminal: Terminal, renderScheduler: ((@escaping () -> Void) -> Void)? = nil) {
         self.terminal = terminal
         self.scheduleRender = renderScheduler ?? { handler in
@@ -129,24 +126,24 @@ public final class TUI: Container {
     }
 
     private func writeFullRender(_ lines: [String], clear: Bool = false) {
-        var buffer = syncStart
+        var buffer = ANSI.syncStart
         if clear {
-            buffer += "\u{001B}[3J\u{001B}[2J\u{001B}[H"
+            buffer += ANSI.clearScrollbackAndScreen
         }
         buffer += lines.joined(separator: "\r\n")
-        buffer += syncEnd
+        buffer += ANSI.syncEnd
         terminal.write(buffer)
     }
 
     private func writePartialRender(lines: [String], from start: Int) {
-        var buffer = syncStart
+        var buffer = ANSI.syncStart
         let lineDiff = start - cursorRow
         if lineDiff > 0 {
-            buffer += "\u{001B}[\(lineDiff)B"
+            buffer += ANSI.cursorDown(lineDiff)
         } else if lineDiff < 0 {
-            buffer += "\u{001B}[\(-lineDiff)A"
+            buffer += ANSI.cursorUp(-lineDiff)
         }
-        buffer += "\r\u{001B}[J"
+        buffer += ANSI.carriageReturn + ANSI.clearToScreenEnd
 
         for index in start..<lines.count {
             if index > start { buffer += "\r\n" }
@@ -155,7 +152,7 @@ public final class TUI: Container {
             buffer += line
         }
 
-        buffer += syncEnd
+        buffer += ANSI.syncEnd
         terminal.write(buffer)
     }
 }

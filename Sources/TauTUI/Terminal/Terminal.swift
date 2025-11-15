@@ -170,9 +170,9 @@ public final class ProcessTerminal: Terminal {
     public func moveBy(lines: Int) {
         guard lines != 0 else { return }
         if lines > 0 {
-            write("\u{001B}[\(lines)B")
+            write(ANSI.cursorDown(lines))
         } else {
-            write("\u{001B}[\(-lines)A")
+            write(ANSI.cursorUp(-lines))
         }
     }
 
@@ -185,15 +185,15 @@ public final class ProcessTerminal: Terminal {
     }
 
     public func clearLine() {
-        write("\u{001B}[K")
+        write(ANSI.clearLine)
     }
 
     public func clearFromCursor() {
-        write("\u{001B}[J")
+        write(ANSI.clearToScreenEnd)
     }
 
     public func clearScreen() {
-        write("\u{001B}[2J\u{001B}[H")
+        write(ANSI.clearScreen)
     }
 
     // MARK: - Raw mode
