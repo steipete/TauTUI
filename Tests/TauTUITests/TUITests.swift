@@ -5,23 +5,8 @@ import Foundation
 
 private final class DummyComponent: Component {
     var lines: [String]
-
-    init(lines: [String]) {
-        self.lines = lines
-    }
-
-    func render(width: Int) -> [String] {
-        lines
-    }
-}
-
-private final class DummyHandler: Component {
-    private let handler: @Sendable (TerminalInput) -> Void
-    init(handler: @escaping @Sendable (TerminalInput) -> Void) {
-        self.handler = handler
-    }
-    nonisolated func render(width: Int) -> [String] { [] }
-    nonisolated func handle(input: TerminalInput) { handler(input) }
+    init(lines: [String]) { self.lines = lines }
+    func render(width: Int) -> [String] { lines }
 }
 
 @Suite("TUI Rendering")
@@ -46,7 +31,6 @@ struct TUIRenderingTests {
 
         terminal.resize(columns: 20, rows: 5)
 
-        // Last write should include sync start + full clear + content.
         let last = terminal.outputLog.last ?? ""
         #expect(last.contains("\u{001B}[?2026h"))
         #expect(last.contains("\u{001B}[3J\u{001B}[2J\u{001B}[H"))
@@ -66,7 +50,7 @@ struct TUIRenderingTests {
 
         let last = terminal.outputLog.last ?? ""
         #expect(last.contains("swift"))
-        #expect(!last.contains("\u{001B}[3J")) // no full clear
+        #expect(!last.contains("\u{001B}[3J"))
         #expect(last.contains("\u{001B}[?2026h"))
     }
 
@@ -79,28 +63,23 @@ struct TUIRenderingTests {
         #expect(events.contains(where: { if case .key(.arrowRight, let m) = $0 { return m.contains(.option) } ; return false }))
         #expect(events.contains(where: { if case .key(.delete, let m) = $0 { return m.contains(.option) } ; return false }))
         #expect(events.contains(where: { if case .key(.backspace, let m) = $0 { return m.contains(.option) } ; return false }))
+
+        // Option+Enter via ESC CR and via CSI 13;3~
+        let enterMeta = parser.parseForTests("\u{001B}\r")
+        #expect(enterMeta.contains(where: { if case .key(.enter, let m) = $0 { return m.contains(.option) } ; return false }))
+
+        let enterCsi = parser.parseForTests("\u{001B}[13;3~")
+        #expect(enterCsi.contains(where: { if case .key(.enter, let m) = $0 { return m.contains(.option) } ; return false }))
     }
 
     @Test
     func keyEventNormalization_csiModifiers() throws {
         let parser = ProcessTerminal()
-        let payload = "\u{001B}[1;3D\u{001B}[1;5C\u{001B}[Z"
+        let payload = "\u{001B}[1;3D\u{001B}[1;5C\u{001B}[Z\u{001B}[13;2~"
         let events = parser.parseForTests(payload)
         #expect(events.contains(where: { if case .key(.arrowLeft, let m) = $0 { return m == [.option] } ; return false }))
         #expect(events.contains(where: { if case .key(.arrowRight, let m) = $0 { return m == [.control] } ; return false }))
         #expect(events.contains(where: { if case .key(.tab, let m) = $0 { return m.contains(.shift) } ; return false }))
-    }
-}
-
-private final class Locked<Value>: @unchecked Sendable {
-    private var valueStorage: Value
-    private let lock = NSLock()
-
-    init(_ value: Value) { self.valueStorage = value }
-
-    var value: Value { lock.withLock { valueStorage } }
-
-    func withMutating(_ mutate: (inout Value) -> Void) {
-        lock.withLock { mutate(&valueStorage) }
+        #expect(events.contains(where: { if case .key(.enter, let m) = $0 { return m.contains(.shift) } ; return false }))
     }
 }

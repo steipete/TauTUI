@@ -92,6 +92,11 @@ public final class ProcessTerminal: Terminal {
     private static let bracketedPasteStart = "\u{001B}[200~"
     private static let bracketedPasteEnd = "\u{001B}[201~"
 
+    // Enter variants some terminals emit with modifiers.
+    private static let shiftEnterCSI = "\u{001B}[13;2~"
+    private static let optionEnterCSI = "\u{001B}[13;3~"
+    private static let optionEnterMeta = "\u{001B}\r"
+
     public init() {}
 
     /// Testing helper: parse a raw input string into `TerminalInput` events
@@ -254,6 +259,23 @@ public final class ProcessTerminal: Terminal {
             if pendingInput.hasPrefix(Self.bracketedPasteStart) {
                 pendingInput.removeFirstCharacters(Self.bracketedPasteStart.count)
                 isInBracketedPaste = true
+                continue
+            }
+
+            // Normalize common Enter-with-modifier sequences emitted as raw data.
+            if pendingInput.hasPrefix(Self.shiftEnterCSI) {
+                emitKey(.enter, modifiers: [.shift])
+                pendingInput.removeFirstCharacters(Self.shiftEnterCSI.count)
+                continue
+            }
+            if pendingInput.hasPrefix(Self.optionEnterCSI) {
+                emitKey(.enter, modifiers: [.option])
+                pendingInput.removeFirstCharacters(Self.optionEnterCSI.count)
+                continue
+            }
+            if pendingInput.hasPrefix(Self.optionEnterMeta) {
+                emitKey(.enter, modifiers: [.option])
+                pendingInput.removeFirstCharacters(Self.optionEnterMeta.count)
                 continue
             }
 

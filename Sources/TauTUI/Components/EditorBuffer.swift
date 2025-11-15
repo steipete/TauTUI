@@ -118,6 +118,14 @@ public struct EditorBuffer: Sendable {
         lines[cursorLine] = String(line[..<index])
     }
 
+    public mutating func moveToLineStart() {
+        cursorCol = 0
+    }
+
+    public mutating func moveToLineEnd() {
+        cursorCol = lines[cursorLine].count
+    }
+
     public mutating func deleteWordBackwards(isBoundary: (Character) -> Bool) {
         var line = lines[cursorLine]
         guard !line.isEmpty, cursorCol > 0 else {

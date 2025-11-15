@@ -67,6 +67,19 @@ struct EditorTests {
     }
 
     @Test
+    func ctrlAMovesToStartAndCtrlEMovesToEnd() async throws {
+        let editor = Editor()
+        editor.setText("hello world")
+        editor.handle(input: .key(.character("a"), modifiers: [.control]))
+        editor.handle(input: .key(.character("x"), modifiers: []))
+        #expect(editor.getText().hasPrefix("x"))
+
+        editor.handle(input: .key(.character("e"), modifiers: [.control]))
+        editor.handle(input: .key(.character("!"), modifiers: []))
+        #expect(editor.getText().hasSuffix("!"))
+    }
+
+    @Test
     func optionBackspaceDeletesWord() async throws {
         let editor = Editor()
         editor.setText("hello world")

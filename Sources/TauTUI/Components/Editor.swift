@@ -207,9 +207,9 @@ public final class Editor: Component {
                 moveCursor(lineDelta: 0, columnDelta: 1)
             }
         case .home:
-            buffer = withMutatingBuffer { buf in buf.cursorCol = 0 }
+            buffer = withMutatingBuffer { buf in buf.moveToLineStart() }
         case .end:
-            buffer = withMutatingBuffer { buf in buf.cursorCol = buf.lines[buf.cursorLine].count }
+            buffer = withMutatingBuffer { buf in buf.moveToLineEnd() }
         case .character(let char):
             if modifiers.contains(.control) {
                 switch char.lowercased() {
@@ -219,6 +219,10 @@ public final class Editor: Component {
                     deleteToEndOfLine()
                 case "w":
                     deleteWordBackwards()
+                case "a":
+                    buffer = withMutatingBuffer { buf in buf.moveToLineStart() }
+                case "e":
+                    buffer = withMutatingBuffer { buf in buf.moveToLineEnd() }
                 default:
                     insertCharacter(String(char))
                 }
