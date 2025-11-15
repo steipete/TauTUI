@@ -12,38 +12,38 @@ public final class Text: Component {
         }
 
         var ansiPrefix: String {
-            "\u{001B}[48;2;\(red);\(green);\(blue)m"
+            "\u{001B}[48;2;\(self.red);\(self.green);\(self.blue)m"
         }
     }
 
     public var text: String {
-        didSet { invalidateCache() }
+        didSet { self.invalidateCache() }
     }
 
     public var paddingX: Int {
-        get { _paddingX }
+        get { self._paddingX }
         set {
             let clamped = max(0, newValue)
-            if clamped != _paddingX {
-                _paddingX = clamped
-                invalidateCache()
+            if clamped != self._paddingX {
+                self._paddingX = clamped
+                self.invalidateCache()
             }
         }
     }
 
     public var paddingY: Int {
-        get { _paddingY }
+        get { self._paddingY }
         set {
             let clamped = max(0, newValue)
-            if clamped != _paddingY {
-                _paddingY = clamped
-                invalidateCache()
+            if clamped != self._paddingY {
+                self._paddingY = clamped
+                self.invalidateCache()
             }
         }
     }
 
     public var background: Background? {
-        didSet { invalidateCache() }
+        didSet { self.invalidateCache() }
     }
 
     private var _paddingX: Int
@@ -64,17 +64,17 @@ public final class Text: Component {
         }
 
         guard width > 0 else {
-            cachedWidth = width
-            cachedLines = []
+            self.cachedWidth = width
+            self.cachedLines = []
             return []
         }
 
-        let contentWidth = max(1, width - _paddingX * 2)
-        let normalized = Ansi.normalizeTabs(text, spacesPerTab: 3)
+        let contentWidth = max(1, width - self._paddingX * 2)
+        let normalized = Ansi.normalizeTabs(self.text, spacesPerTab: 3)
         var lines: [String] = []
 
         for rawLine in normalized.split(separator: "\n", omittingEmptySubsequences: false) {
-            wrapLine(String(rawLine), contentWidth: contentWidth, into: &lines)
+            self.wrapLine(String(rawLine), contentWidth: contentWidth, into: &lines)
         }
 
         if lines.isEmpty {
@@ -85,23 +85,23 @@ public final class Text: Component {
         let emptyLine = String(repeating: " ", count: width)
         var result: [String] = []
 
-        for _ in 0..<_paddingY {
-            result.append(applyBackground(to: emptyLine))
+        for _ in 0..<self._paddingY {
+            result.append(self.applyBackground(to: emptyLine))
         }
 
         for line in lines {
             let visible = VisibleWidth.measure(line)
-            let rightPadding = max(0, width - _paddingX - visible)
+            let rightPadding = max(0, width - self._paddingX - visible)
             let paddedLine = leftPad + line + String(repeating: " ", count: rightPadding)
-            result.append(applyBackground(to: paddedLine))
+            result.append(self.applyBackground(to: paddedLine))
         }
 
-        for _ in 0..<_paddingY {
-            result.append(applyBackground(to: emptyLine))
+        for _ in 0..<self._paddingY {
+            result.append(self.applyBackground(to: emptyLine))
         }
 
-        cachedWidth = width
-        cachedLines = result
+        self.cachedWidth = width
+        self.cachedLines = result
         return result
     }
 
@@ -123,7 +123,7 @@ public final class Text: Component {
                 if VisibleWidth.measure(wordString) <= contentWidth {
                     current = wordString
                 } else {
-                    output.append(contentsOf: breakLongWord(wordString, limit: contentWidth))
+                    output.append(contentsOf: self.breakLongWord(wordString, limit: contentWidth))
                 }
                 continue
             }
@@ -136,7 +136,7 @@ public final class Text: Component {
                 if VisibleWidth.measure(wordString) <= contentWidth {
                     current = wordString
                 } else {
-                    output.append(contentsOf: breakLongWord(wordString, limit: contentWidth))
+                    output.append(contentsOf: self.breakLongWord(wordString, limit: contentWidth))
                     current = ""
                 }
             }
@@ -177,7 +177,7 @@ public final class Text: Component {
     }
 
     private func invalidateCache() {
-        cachedWidth = nil
-        cachedLines = nil
+        self.cachedWidth = nil
+        self.cachedLines = nil
     }
 }

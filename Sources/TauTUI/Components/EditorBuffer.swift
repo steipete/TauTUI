@@ -15,80 +15,80 @@ public struct EditorBuffer: Sendable {
     // MARK: - Accessors
 
     public var text: String {
-        lines.joined(separator: "\n")
+        self.lines.joined(separator: "\n")
     }
 
     public mutating func setText(_ text: String) {
         let normalized = text
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\r", with: "\n")
-        lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        if lines.isEmpty { lines = [""] }
-        cursorLine = lines.count - 1
-        cursorCol = lines[cursorLine].count
+        self.lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        if self.lines.isEmpty { self.lines = [""] }
+        self.cursorLine = self.lines.count - 1
+        self.cursorCol = self.lines[self.cursorLine].count
     }
 
     // MARK: - Mutations
 
     public mutating func insertCharacter(_ character: String) {
-        var line = lines[cursorLine]
-        let index = line.index(line.startIndex, offsetBy: cursorCol)
+        var line = self.lines[self.cursorLine]
+        let index = line.index(line.startIndex, offsetBy: self.cursorCol)
         line.insert(contentsOf: character, at: index)
-        lines[cursorLine] = line
-        cursorCol += character.count
+        self.lines[self.cursorLine] = line
+        self.cursorCol += character.count
     }
 
     public mutating func insertNewLine() {
-        let line = lines[cursorLine]
-        let index = line.index(line.startIndex, offsetBy: cursorCol)
+        let line = self.lines[self.cursorLine]
+        let index = line.index(line.startIndex, offsetBy: self.cursorCol)
         let before = String(line[..<index])
         let after = String(line[index...])
-        lines[cursorLine] = before
-        lines.insert(after, at: cursorLine + 1)
-        cursorLine += 1
-        cursorCol = 0
+        self.lines[self.cursorLine] = before
+        self.lines.insert(after, at: self.cursorLine + 1)
+        self.cursorLine += 1
+        self.cursorCol = 0
     }
 
     public mutating func backspace() {
-        if cursorCol > 0 {
-            var line = lines[cursorLine]
-            let index = line.index(line.startIndex, offsetBy: cursorCol - 1)
+        if self.cursorCol > 0 {
+            var line = self.lines[self.cursorLine]
+            let index = line.index(line.startIndex, offsetBy: self.cursorCol - 1)
             line.remove(at: index)
-            lines[cursorLine] = line
-            cursorCol -= 1
-        } else if cursorLine > 0 {
-            let current = lines.remove(at: cursorLine)
-            cursorLine -= 1
-            cursorCol = lines[cursorLine].count
-            lines[cursorLine] += current
+            self.lines[self.cursorLine] = line
+            self.cursorCol -= 1
+        } else if self.cursorLine > 0 {
+            let current = self.lines.remove(at: self.cursorLine)
+            self.cursorLine -= 1
+            self.cursorCol = self.lines[self.cursorLine].count
+            self.lines[self.cursorLine] += current
         }
     }
 
     public mutating func deleteForward() {
-        var line = lines[cursorLine]
-        guard cursorCol < line.count else {
-            if cursorLine < lines.count - 1 {
-                line += lines.remove(at: cursorLine + 1)
-                lines[cursorLine] = line
+        var line = self.lines[self.cursorLine]
+        guard self.cursorCol < line.count else {
+            if self.cursorLine < self.lines.count - 1 {
+                line += self.lines.remove(at: self.cursorLine + 1)
+                self.lines[self.cursorLine] = line
             }
             return
         }
-        let index = line.index(line.startIndex, offsetBy: cursorCol)
+        let index = line.index(line.startIndex, offsetBy: self.cursorCol)
         line.remove(at: index)
-        lines[cursorLine] = line
+        self.lines[self.cursorLine] = line
     }
 
     public mutating func deleteWordForward(isBoundary: (Character) -> Bool) {
-        var line = lines[cursorLine]
-        guard cursorCol < line.count else {
-            if cursorLine < lines.count - 1 {
-                line += lines.remove(at: cursorLine + 1)
-                lines[cursorLine] = line
+        var line = self.lines[self.cursorLine]
+        guard self.cursorCol < line.count else {
+            if self.cursorLine < self.lines.count - 1 {
+                line += self.lines.remove(at: self.cursorLine + 1)
+                self.lines[self.cursorLine] = line
             }
             return
         }
 
-        var deleteTo = cursorCol
+        var deleteTo = self.cursorCol
         while deleteTo < line.count {
             let ch = line[line.index(line.startIndex, offsetBy: deleteTo)]
             if isBoundary(ch) { deleteTo += 1 } else { break }
@@ -99,40 +99,40 @@ public struct EditorBuffer: Sendable {
             deleteTo += 1
         }
 
-        let start = line.index(line.startIndex, offsetBy: cursorCol)
+        let start = line.index(line.startIndex, offsetBy: self.cursorCol)
         let end = line.index(line.startIndex, offsetBy: deleteTo)
         line.removeSubrange(start..<end)
-        lines[cursorLine] = line
+        self.lines[self.cursorLine] = line
     }
 
     public mutating func deleteToStartOfLine() {
-        let line = lines[cursorLine]
-        let index = line.index(line.startIndex, offsetBy: cursorCol)
-        lines[cursorLine] = String(line[index...])
-        cursorCol = 0
+        let line = self.lines[self.cursorLine]
+        let index = line.index(line.startIndex, offsetBy: self.cursorCol)
+        self.lines[self.cursorLine] = String(line[index...])
+        self.cursorCol = 0
     }
 
     public mutating func deleteToEndOfLine() {
-        let line = lines[cursorLine]
-        let index = line.index(line.startIndex, offsetBy: cursorCol)
-        lines[cursorLine] = String(line[..<index])
+        let line = self.lines[self.cursorLine]
+        let index = line.index(line.startIndex, offsetBy: self.cursorCol)
+        self.lines[self.cursorLine] = String(line[..<index])
     }
 
     public mutating func moveToLineStart() {
-        cursorCol = 0
+        self.cursorCol = 0
     }
 
     public mutating func moveToLineEnd() {
-        cursorCol = lines[cursorLine].count
+        self.cursorCol = self.lines[self.cursorLine].count
     }
 
     public mutating func deleteWordBackwards(isBoundary: (Character) -> Bool) {
-        var line = lines[cursorLine]
-        guard !line.isEmpty, cursorCol > 0 else {
-            backspace()
+        var line = self.lines[self.cursorLine]
+        guard !line.isEmpty, self.cursorCol > 0 else {
+            self.backspace()
             return
         }
-        var deleteFrom = cursorCol
+        var deleteFrom = self.cursorCol
         while deleteFrom > 0 {
             let prevIndex = line.index(line.startIndex, offsetBy: deleteFrom - 1)
             let ch = line[prevIndex]
@@ -140,24 +140,24 @@ public struct EditorBuffer: Sendable {
             deleteFrom -= 1
         }
         let start = line.index(line.startIndex, offsetBy: deleteFrom)
-        let end = line.index(line.startIndex, offsetBy: cursorCol)
+        let end = line.index(line.startIndex, offsetBy: self.cursorCol)
         line.removeSubrange(start..<end)
-        lines[cursorLine] = line
-        cursorCol = deleteFrom
+        self.lines[self.cursorLine] = line
+        self.cursorCol = deleteFrom
     }
 
     public mutating func moveCursor(lineDelta: Int, columnDelta: Int) {
-        let newLine = min(max(cursorLine + lineDelta, 0), lines.count - 1)
-        let targetLine = lines[newLine]
+        let newLine = min(max(cursorLine + lineDelta, 0), self.lines.count - 1)
+        let targetLine = self.lines[newLine]
         let newCol = min(max(cursorCol + columnDelta, 0), targetLine.count)
-        cursorLine = newLine
-        cursorCol = newCol
+        self.cursorLine = newLine
+        self.cursorCol = newCol
     }
 
     public mutating func moveByWord(_ direction: Int, isBoundary: (Character) -> Bool) {
         guard direction != 0 else { return }
-        let line = lines[cursorLine]
-        var idx = cursorCol
+        let line = self.lines[self.cursorLine]
+        var idx = self.cursorCol
         if direction > 0 {
             while idx < line.count {
                 let ch = line[line.index(line.startIndex, offsetBy: idx)]
@@ -179,6 +179,6 @@ public struct EditorBuffer: Sendable {
                 idx -= 1
             }
         }
-        cursorCol = max(0, min(line.count, idx))
+        self.cursorCol = max(0, min(line.count, idx))
     }
 }

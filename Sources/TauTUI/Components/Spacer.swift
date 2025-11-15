@@ -3,8 +3,8 @@ public final class Spacer: Component {
     private var storage: Int
 
     public var lines: Int {
-        get { storage }
-        set { storage = max(0, newValue) }
+        get { self.storage }
+        set { self.storage = max(0, newValue) }
     }
 
     public init(lines: Int = 1) {
@@ -12,7 +12,7 @@ public final class Spacer: Component {
     }
 
     public func render(width: Int) -> [String] {
-        guard storage > 0 else { return [] }
-        return Array(repeating: "", count: storage)
+        guard self.storage > 0 else { return [] }
+        return Array(repeating: "", count: self.storage)
     }
 }

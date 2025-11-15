@@ -4,7 +4,7 @@ import Dispatch
 @MainActor
 public final class TUI: Container {
     private let terminal: Terminal
-    private let scheduleRender: (@escaping () -> Void) -> Void
+    private let scheduleRender: (@MainActor @Sendable @escaping () -> Void) -> Void
     private var focusedComponent: Component?
 
     private var previousLines: [String] = []
@@ -12,7 +12,7 @@ public final class TUI: Container {
     private var cursorRow: Int = 0
     private var renderRequested = false
 
-    public init(terminal: Terminal, renderScheduler: ((@escaping () -> Void) -> Void)? = nil) {
+    public init(terminal: Terminal, renderScheduler: ((@MainActor @Sendable @escaping () -> Void) -> Void)? = nil) {
         self.terminal = terminal
         self.scheduleRender = renderScheduler ?? { handler in
             DispatchQueue.main.async(execute: handler)
@@ -21,28 +21,28 @@ public final class TUI: Container {
     }
 
     public func setFocus(_ component: Component?) {
-        focusedComponent = component
+        self.focusedComponent = component
     }
 
     public func start() throws {
-        try terminal.start(onInput: { [weak self] input in
+        try self.terminal.start(onInput: { [weak self] input in
             self?.handleInput(input)
         }, onResize: { [weak self] in
             self?.requestRender()
         })
-        terminal.hideCursor()
-        requestRender()
+        self.terminal.hideCursor()
+        self.requestRender()
     }
 
     public func stop() {
-        terminal.showCursor()
-        terminal.stop()
+        self.terminal.showCursor()
+        self.terminal.stop()
     }
 
     public func requestRender() {
-        guard !renderRequested else { return }
-        renderRequested = true
-        scheduleRender { [weak self] in
+        guard !self.renderRequested else { return }
+        self.renderRequested = true
+        self.scheduleRender { @MainActor [weak self] in
             guard let self else { return }
             self.renderRequested = false
             self.performRender()
@@ -52,37 +52,37 @@ public final class TUI: Container {
     // MARK: - Input
 
     private func handleInput(_ input: TerminalInput) {
-        focusedComponent?.handle(input: input)
-        requestRender()
+        self.focusedComponent?.handle(input: input)
+        self.requestRender()
     }
 
     // MARK: - Rendering
 
     private func performRender() {
-        let width = terminal.columns
-        let height = terminal.rows
+        let width = self.terminal.columns
+        let height = self.terminal.rows
         let newLines = render(width: width)
 
         guard !newLines.isEmpty else {
-            previousLines = []
-            previousWidth = width
-            cursorRow = 0
+            self.previousLines = []
+            self.previousWidth = width
+            self.cursorRow = 0
             return
         }
 
-        if previousLines.isEmpty {
-            writeFullRender(newLines)
-            previousLines = newLines
-            previousWidth = width
-            cursorRow = newLines.count - 1
+        if self.previousLines.isEmpty {
+            self.writeFullRender(newLines)
+            self.previousLines = newLines
+            self.previousWidth = width
+            self.cursorRow = newLines.count - 1
             return
         }
 
-        if previousWidth != width {
-            writeFullRender(newLines, clear: true)
-            previousLines = newLines
-            previousWidth = width
-            cursorRow = newLines.count - 1
+        if self.previousWidth != width {
+            self.writeFullRender(newLines, clear: true)
+            self.previousLines = newLines
+            self.previousWidth = width
+            self.cursorRow = newLines.count - 1
             return
         }
 
@@ -90,19 +90,19 @@ public final class TUI: Container {
             return // no changes
         }
 
-        let viewportTop = cursorRow - height + 1
+        let viewportTop = self.cursorRow - height + 1
         if diffRange.lowerBound < viewportTop {
-            writeFullRender(newLines, clear: true)
-            previousLines = newLines
-            previousWidth = width
-            cursorRow = newLines.count - 1
+            self.writeFullRender(newLines, clear: true)
+            self.previousLines = newLines
+            self.previousWidth = width
+            self.cursorRow = newLines.count - 1
             return
         }
 
-        writePartialRender(lines: newLines, from: diffRange.lowerBound)
-        previousLines = newLines
-        previousWidth = width
-        cursorRow = newLines.count - 1
+        self.writePartialRender(lines: newLines, from: diffRange.lowerBound)
+        self.previousLines = newLines
+        self.previousWidth = width
+        self.cursorRow = newLines.count - 1
     }
 
     private func computeDiffRange(old: [String], new: [String]) -> Range<Int>? {
@@ -132,12 +132,12 @@ public final class TUI: Container {
         }
         buffer += lines.joined(separator: "\r\n")
         buffer += ANSI.syncEnd
-        terminal.write(buffer)
+        self.terminal.write(buffer)
     }
 
     private func writePartialRender(lines: [String], from start: Int) {
         var buffer = ANSI.syncStart
-        let lineDiff = start - cursorRow
+        let lineDiff = start - self.cursorRow
         if lineDiff > 0 {
             buffer += ANSI.cursorDown(lineDiff)
         } else if lineDiff < 0 {
@@ -148,11 +148,11 @@ public final class TUI: Container {
         for index in start..<lines.count {
             if index > start { buffer += "\r\n" }
             let line = lines[index]
-            precondition(VisibleWidth.measure(line) <= terminal.columns, "Rendered line exceeds width")
+            precondition(VisibleWidth.measure(line) <= self.terminal.columns, "Rendered line exceeds width")
             buffer += line
         }
 
         buffer += ANSI.syncEnd
-        terminal.write(buffer)
+        self.terminal.write(buffer)
     }
 }

@@ -3,4 +3,3 @@
 
 // Re-export VirtualTerminal for tests/fixtures without exposing it via the main library.
 public typealias VirtualTerminalInternal = VirtualTerminal
-

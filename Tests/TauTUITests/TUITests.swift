@@ -1,12 +1,12 @@
-import Testing
 import Foundation
+import Testing
 @testable import TauTUI
 @testable import TauTUIInternal
 
 private final class DummyComponent: Component {
     var lines: [String]
     init(lines: [String]) { self.lines = lines }
-    func render(width: Int) -> [String] { lines }
+    func render(width: Int) -> [String] { self.lines }
 }
 
 @Suite("TUI Rendering")
@@ -59,17 +59,23 @@ struct TUIRenderingTests {
         // ESC b -> Option+Left, ESC f -> Option+Right, ESC d -> Option+Delete, ESC DEL -> Option+Backspace
         let parser = ProcessTerminal()
         let events = parser.parseForTests("\u{001B}b\u{001B}f\u{001B}d" + String(bytes: [0x1B, 0x7F], encoding: .utf8)!)
-        #expect(events.contains(where: { if case .key(.arrowLeft, let m) = $0 { return m.contains(.option) } ; return false }))
-        #expect(events.contains(where: { if case .key(.arrowRight, let m) = $0 { return m.contains(.option) } ; return false }))
-        #expect(events.contains(where: { if case .key(.delete, let m) = $0 { return m.contains(.option) } ; return false }))
-        #expect(events.contains(where: { if case .key(.backspace, let m) = $0 { return m.contains(.option) } ; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.arrowLeft, m) = $0 { return m.contains(.option) }; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.arrowRight, m) = $0 { return m.contains(.option) }; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.delete, m) = $0 { return m.contains(.option) }; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.backspace, m) = $0 { return m.contains(.option) }; return false }))
 
         // Option+Enter via ESC CR and via CSI 13;3~
         let enterMeta = parser.parseForTests("\u{001B}\r")
-        #expect(enterMeta.contains(where: { if case .key(.enter, let m) = $0 { return m.contains(.option) } ; return false }))
+        #expect(enterMeta
+            .contains(where: { if case let .key(.enter, m) = $0 { return m.contains(.option) }; return false }))
 
         let enterCsi = parser.parseForTests("\u{001B}[13;3~")
-        #expect(enterCsi.contains(where: { if case .key(.enter, let m) = $0 { return m.contains(.option) } ; return false }))
+        #expect(enterCsi
+            .contains(where: { if case let .key(.enter, m) = $0 { return m.contains(.option) }; return false }))
     }
 
     @Test
@@ -77,9 +83,12 @@ struct TUIRenderingTests {
         let parser = ProcessTerminal()
         let payload = "\u{001B}[1;3D\u{001B}[1;5C\u{001B}[Z\u{001B}[13;2~"
         let events = parser.parseForTests(payload)
-        #expect(events.contains(where: { if case .key(.arrowLeft, let m) = $0 { return m == [.option] } ; return false }))
-        #expect(events.contains(where: { if case .key(.arrowRight, let m) = $0 { return m == [.control] } ; return false }))
-        #expect(events.contains(where: { if case .key(.tab, let m) = $0 { return m.contains(.shift) } ; return false }))
-        #expect(events.contains(where: { if case .key(.enter, let m) = $0 { return m.contains(.shift) } ; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.arrowLeft, m) = $0 { return m == [.option] }; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.arrowRight, m) = $0 { return m == [.control] }; return false }))
+        #expect(events.contains(where: { if case let .key(.tab, m) = $0 { return m.contains(.shift) }; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.enter, m) = $0 { return m.contains(.shift) }; return false }))
     }
 }

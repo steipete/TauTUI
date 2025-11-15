@@ -11,12 +11,12 @@ public struct SelectItem {
 }
 
 public final class SelectList: Component {
-    public var items: [SelectItem] { didSet { filterItems() } }
+    public var items: [SelectItem] { didSet { self.filterItems() } }
     public var maxVisible: Int
     public var onSelect: ((SelectItem) -> Void)?
     public var onCancel: (() -> Void)?
 
-    private var filterText: String = "" { didSet { filterItems() } }
+    private var filterText: String = "" { didSet { self.filterItems() } }
     private var filtered: [SelectItem] = []
     private var selectedIndex: Int = 0
 
@@ -27,19 +27,19 @@ public final class SelectList: Component {
     }
 
     public func setFilter(_ newValue: String) {
-        filterText = newValue
+        self.filterText = newValue
     }
 
     public func render(width: Int) -> [String] {
-        guard !filtered.isEmpty else {
+        guard !self.filtered.isEmpty else {
             return ["\u{001B}[90m  No matching commands\u{001B}[0m"]
         }
-        let start = max(0, min(selectedIndex - maxVisible / 2, filtered.count - maxVisible))
-        let end = min(filtered.count, start + maxVisible)
+        let start = max(0, min(selectedIndex - self.maxVisible / 2, self.filtered.count - self.maxVisible))
+        let end = min(filtered.count, start + self.maxVisible)
         var lines: [String] = []
         for index in start..<end {
-            let item = filtered[index]
-            let isSelected = index == selectedIndex
+            let item = self.filtered[index]
+            let isSelected = index == self.selectedIndex
             let prefix = isSelected ? "\u{001B}[34m→ \u{001B}[0m" : "  "
             let title = isSelected ? "\u{001B}[34m\(item.label)\u{001B}[0m" : item.label
             var line = prefix + title
@@ -52,8 +52,8 @@ public final class SelectList: Component {
             }
             lines.append(line)
         }
-        if filtered.count > maxVisible {
-            lines.append("\u{001B}[90m  (\(selectedIndex + 1)/\(filtered.count))\u{001B}[0m")
+        if self.filtered.count > self.maxVisible {
+            lines.append("\u{001B}[90m  (\(self.selectedIndex + 1)/\(self.filtered.count))\u{001B}[0m")
         }
         return lines
     }
@@ -62,31 +62,35 @@ public final class SelectList: Component {
         guard case let .key(key, _) = input else { return }
         switch key {
         case .arrowUp:
-            selectedIndex = max(0, selectedIndex - 1)
+            self.selectedIndex = max(0, self.selectedIndex - 1)
         case .arrowDown:
-            selectedIndex = min(filtered.count - 1, selectedIndex + 1)
+            self.selectedIndex = min(self.filtered.count - 1, self.selectedIndex + 1)
         case .enter:
-            if filtered.indices.contains(selectedIndex) {
-                onSelect?(filtered[selectedIndex])
+            if self.filtered.indices.contains(self.selectedIndex) {
+                self.onSelect?(self.filtered[self.selectedIndex])
             }
         case .escape:
-            onCancel?()
+            self.onCancel?()
         default:
             break
         }
     }
 
     public func selectedItem() -> SelectItem? {
-        guard filtered.indices.contains(selectedIndex) else { return nil }
-        return filtered[selectedIndex]
+        guard self.filtered.indices.contains(self.selectedIndex) else { return nil }
+        return self.filtered[self.selectedIndex]
     }
 
     private func filterItems() {
-        if filterText.isEmpty {
-            filtered = items
+        if self.filterText.isEmpty {
+            self.filtered = self.items
         } else {
-            filtered = items.filter { $0.value.lowercased().hasPrefix(filterText.lowercased()) || $0.label.lowercased().hasPrefix(filterText.lowercased()) }
+            self.filtered = self.items
+                .filter {
+                    $0.value.lowercased().hasPrefix(self.filterText.lowercased()) || $0.label.lowercased()
+                        .hasPrefix(self.filterText.lowercased())
+                }
         }
-        selectedIndex = min(max(0, selectedIndex), max(0, filtered.count - 1))
+        self.selectedIndex = min(max(0, self.selectedIndex), max(0, self.filtered.count - 1))
     }
 }

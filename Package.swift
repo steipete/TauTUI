@@ -6,17 +6,15 @@ import PackageDescription
 let package = Package(
     name: "TauTUI",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v13),
     ],
     products: [
         .library(
             name: "TauTUI",
-            targets: ["TauTUI"]
-        ),
+            targets: ["TauTUI"]),
         .executable(
             name: "ChatDemo",
-            targets: ["ChatDemo"]
-        ),
+            targets: ["ChatDemo"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-markdown.git", from: "0.7.3"),
@@ -32,26 +30,21 @@ let package = Package(
                 .product(name: "DisplayWidth", package: "swift-displaywidth"),
             ],
             swiftSettings: [
-                .unsafeFlags(["-strict-concurrency=complete"], .when(platforms: [.macOS, .linux]))
-            ]
-        ),
+                .unsafeFlags(["-strict-concurrency=complete"], .when(platforms: [.macOS, .linux])),
+            ]),
         .target(
             name: "TauTUIInternal",
             dependencies: ["TauTUI"],
             path: "Sources/TauTUIInternal",
             swiftSettings: [
-                .unsafeFlags(["-strict-concurrency=complete"], .when(platforms: [.macOS, .linux]))
-            ]
-        ),
+                .unsafeFlags(["-strict-concurrency=complete"], .when(platforms: [.macOS, .linux])),
+            ]),
         .executableTarget(
             name: "ChatDemo",
             dependencies: ["TauTUI"],
-            path: "Examples/ChatDemo"
-        ),
+            path: "Examples/ChatDemo"),
         .testTarget(
             name: "TauTUITests",
             dependencies: ["TauTUI", "TauTUIInternal"],
-            path: "Tests/TauTUITests"
-        ),
-    ]
-)
+            path: "Tests/TauTUITests"),
+    ])

@@ -31,21 +31,21 @@ public final class Loader: Component {
     private let textComponent = Text(text: "", paddingX: 1, paddingY: 0)
 
     public private(set) var message: String {
-        didSet { updateText() }
+        didSet { self.updateText() }
     }
 
     public init(tui: TUI, message: String = "Loading...", autoStart: Bool = true) {
         self.renderTarget = .tui(RenderCallback(tui: tui))
         self.message = message
-        updateText()
-        if autoStart { start() }
+        self.updateText()
+        if autoStart { self.start() }
     }
 
     public init(message: String = "Loading...", autoStart: Bool = true, renderNotifier: @escaping () -> Void) {
         self.renderTarget = .closure(renderNotifier)
         self.message = message
-        updateText()
-        if autoStart { start() }
+        self.updateText()
+        if autoStart { self.start() }
     }
 
     deinit {
@@ -64,35 +64,35 @@ public final class Loader: Component {
     }
 
     public func stop() {
-        timer?.cancel()
-        timer = nil
+        self.timer?.cancel()
+        self.timer = nil
     }
 
     public func setMessage(_ newMessage: String) {
-        message = newMessage
+        self.message = newMessage
     }
 
     public func render(width: Int) -> [String] {
-        [""] + textComponent.render(width: width)
+        [""] + self.textComponent.render(width: width)
     }
 
     func tick() {
-        frameIndex = (frameIndex + 1) % Loader.frames.count
-        updateText()
-        notifyRender()
+        self.frameIndex = (self.frameIndex + 1) % Loader.frames.count
+        self.updateText()
+        self.notifyRender()
     }
 
     private func notifyRender() {
-        switch renderTarget {
-        case .closure(let handler):
+        switch self.renderTarget {
+        case let .closure(handler):
             handler()
-        case .tui(let callback):
+        case let .tui(callback):
             callback.notify()
         }
     }
 
     private func updateText() {
-        let frame = Loader.frames[frameIndex]
-        textComponent.text = "\(frame) \(message)"
+        let frame = Loader.frames[self.frameIndex]
+        self.textComponent.text = "\(frame) \(self.message)"
     }
 }

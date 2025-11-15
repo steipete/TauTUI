@@ -10,6 +10,6 @@ public enum VisibleWidth {
         guard !text.isEmpty else { return 0 }
         let normalized = Ansi.normalizeTabs(text, spacesPerTab: tabSize)
         let stripped = Ansi.stripCodes(normalized)
-        return measurer(stripped)
+        return self.measurer(stripped)
     }
 }

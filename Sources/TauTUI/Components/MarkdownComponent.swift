@@ -12,9 +12,9 @@ public final class MarkdownComponent: Component {
         }
     }
 
-    public var text: String { didSet { invalidateCache() } }
-    public var padding: Padding { didSet { invalidateCache() } }
-    public var background: Text.Background? { didSet { invalidateCache() } }
+    public var text: String { didSet { self.invalidateCache() } }
+    public var padding: Padding { didSet { self.invalidateCache() } }
+    public var background: Text.Background? { didSet { self.invalidateCache() } }
 
     private var cachedWidth: Int?
     private var cachedLines: [String]?
@@ -27,9 +27,9 @@ public final class MarkdownComponent: Component {
 
     public func render(width: Int) -> [String] {
         if let cachedWidth, cachedWidth == width, let cachedLines { return cachedLines }
-        guard width > 0 else { cache(width: width, lines: []); return [] }
+        guard width > 0 else { self.cache(width: width, lines: []); return [] }
 
-        let contentWidth = max(1, width - padding.horizontal * 2)
+        let contentWidth = max(1, width - self.padding.horizontal * 2)
         let renderer = Renderer(maxWidth: contentWidth)
         let document = Document(parsing: text)
         document.children.forEach { renderer.visit($0) }
@@ -38,16 +38,20 @@ public final class MarkdownComponent: Component {
         let emptyLine = String(repeating: " ", count: width)
         var result: [String] = []
 
-        for _ in 0..<padding.vertical { result.append(applyBackground(to: emptyLine)) }
+        for _ in 0..<self.padding.vertical {
+            result.append(self.applyBackground(to: emptyLine))
+        }
         for line in renderer.lines {
             let visible = VisibleWidth.measure(line)
-            let right = max(0, width - padding.horizontal - visible)
+            let right = max(0, width - self.padding.horizontal - visible)
             let padded = leftPad + line + String(repeating: " ", count: right)
-            result.append(applyBackground(to: padded))
+            result.append(self.applyBackground(to: padded))
         }
-        for _ in 0..<padding.vertical { result.append(applyBackground(to: emptyLine)) }
+        for _ in 0..<self.padding.vertical {
+            result.append(self.applyBackground(to: emptyLine))
+        }
 
-        cache(width: width, lines: result)
+        self.cache(width: width, lines: result)
         return result
     }
 
@@ -57,13 +61,13 @@ public final class MarkdownComponent: Component {
     }
 
     private func invalidateCache() {
-        cachedWidth = nil
-        cachedLines = nil
+        self.cachedWidth = nil
+        self.cachedLines = nil
     }
 
     private func cache(width: Int, lines: [String]) {
-        cachedWidth = width
-        cachedLines = lines
+        self.cachedWidth = width
+        self.cachedLines = lines
     }
 }
 
@@ -79,50 +83,49 @@ private final class Renderer {
     func visit(_ markup: Markup) {
         switch markup {
         case let heading as Heading:
-            renderHeading(heading)
+            self.renderHeading(heading)
         case let paragraph as Paragraph:
-            renderParagraph(paragraph)
+            self.renderParagraph(paragraph)
         case let list as UnorderedList:
-            listDepth += 1
-            renderListItems(Array(list.listItems), ordered: false)
-            listDepth -= 1
+            self.listDepth += 1
+            self.renderListItems(Array(list.listItems), ordered: false)
+            self.listDepth -= 1
         case let list as OrderedList:
-            listDepth += 1
-            renderListItems(Array(list.listItems), ordered: true)
-            listDepth -= 1
+            self.listDepth += 1
+            self.renderListItems(Array(list.listItems), ordered: true)
+            self.listDepth -= 1
         case let blockQuote as BlockQuote:
-            renderBlockQuote(blockQuote)
+            self.renderBlockQuote(blockQuote)
         case let code as CodeBlock:
-            renderCodeBlock(code)
+            self.renderCodeBlock(code)
         case let thematic as ThematicBreak:
-            renderThematicBreak(thematic)
+            self.renderThematicBreak(thematic)
         case let table as Table:
-            renderTable(table)
+            self.renderTable(table)
         case let html as HTMLBlock:
-            wrap(line: html.rawHTML)
+            self.wrap(line: html.rawHTML)
         default:
-            markup.children.forEach { visit($0) }
+            markup.children.forEach { self.visit($0) }
         }
     }
 
     private func renderHeading(_ heading: Heading) {
-        let text = renderInline(heading.inlineChildren)
-        let decorated: String
-        switch heading.level {
+        let text = self.renderInline(heading.inlineChildren)
+        let decorated = switch heading.level {
         case 1:
-            decorated = "\u{001B}[1;4;33m\(text)\u{001B}[0m"
+            "\u{001B}[1;4;33m\(text)\u{001B}[0m"
         case 2:
-            decorated = "\u{001B}[1;33m\(text)\u{001B}[0m"
+            "\u{001B}[1;33m\(text)\u{001B}[0m"
         default:
-            decorated = "\u{001B}[1m\(String(repeating: "#", count: heading.level)) \(text)\u{001B}[0m"
+            "\u{001B}[1m\(String(repeating: "#", count: heading.level)) \(text)\u{001B}[0m"
         }
-        wrap(line: decorated)
-        lines.append("")
+        self.wrap(line: decorated)
+        self.lines.append("")
     }
 
     private func renderParagraph(_ paragraph: Paragraph) {
-        wrap(line: renderInline(paragraph.inlineChildren))
-        lines.append("")
+        self.wrap(line: self.renderInline(paragraph.inlineChildren))
+        self.lines.append("")
     }
 
     private func renderListItems(_ items: [ListItem], ordered: Bool) {
@@ -132,43 +135,43 @@ private final class Renderer {
             let children = Array(item.children)
             if let firstChild = children.first {
                 if let paragraph = firstChild as? Paragraph {
-                    let inline = renderInline(paragraph.inlineChildren)
-                    wrap(line: "\u{001B}[36m\(bullet)\u{001B}[0m\(inline)")
+                    let inline = self.renderInline(paragraph.inlineChildren)
+                    self.wrap(line: "\u{001B}[36m\(bullet)\u{001B}[0m\(inline)")
                 } else {
-                    wrap(line: bullet + firstChild.format())
+                    self.wrap(line: bullet + firstChild.format())
                 }
                 if children.count > 1 {
-                    children.dropFirst().forEach { visit($0) }
+                    children.dropFirst().forEach { self.visit($0) }
                 }
             } else {
-                wrap(line: bullet)
+                self.wrap(line: bullet)
             }
         }
-        lines.append("")
+        self.lines.append("")
     }
 
     private func renderBlockQuote(_ quote: BlockQuote) {
         let innerRenderer = Renderer(maxWidth: max(maxWidth - 2, 1))
         quote.children.forEach { innerRenderer.visit($0) }
-        innerRenderer.lines.forEach { line in
-            lines.append("\u{001B}[90m│ \u{001B}[3m\(line)\u{001B}[0m")
+        for line in innerRenderer.lines {
+            self.lines.append("\u{001B}[90m│ \u{001B}[3m\(line)\u{001B}[0m")
         }
-        lines.append("")
+        self.lines.append("")
     }
 
     private func renderCodeBlock(_ code: CodeBlock) {
-        lines.append("\u{001B}[90m```\(code.language ?? "")\u{001B}[0m")
-        code.code.split(separator: "\n", omittingEmptySubsequences: false).forEach { line in
-            lines.append("\u{001B}[2m  \u{001B}[0m\u{001B}[32m\(line)\u{001B}[0m")
+        self.lines.append("\u{001B}[90m```\(code.language ?? "")\u{001B}[0m")
+        for line in code.code.split(separator: "\n", omittingEmptySubsequences: false) {
+            self.lines.append("\u{001B}[2m  \u{001B}[0m\u{001B}[32m\(line)\u{001B}[0m")
         }
-        lines.append("\u{001B}[90m```\u{001B}[0m")
-        lines.append("")
+        self.lines.append("\u{001B}[90m```\u{001B}[0m")
+        self.lines.append("")
     }
 
     private func renderThematicBreak(_ breakNode: ThematicBreak) {
         let width = min(maxWidth, 80)
-        lines.append("\u{001B}[90m\(String(repeating: "─", count: width))\u{001B}[0m")
-        lines.append("")
+        self.lines.append("\u{001B}[90m\(String(repeating: "─", count: width))\u{001B}[0m")
+        self.lines.append("")
     }
 
     private func renderTable(_ table: Table) {
@@ -179,8 +182,8 @@ private final class Renderer {
         func measure(cells: [Table.Cell]) {
             for (index, cell) in cells.enumerated() {
                 guard index < widths.count else { continue }
-                let text = renderInline(cell.inlineChildren)
-                widths[index] = min(max(widths[index], VisibleWidth.measure(text)), maxWidth)
+                let text = self.renderInline(cell.inlineChildren)
+                widths[index] = min(max(widths[index], VisibleWidth.measure(text)), self.maxWidth)
             }
         }
 
@@ -191,14 +194,13 @@ private final class Renderer {
             var line = "│ "
             for (index, cell) in cells.enumerated() {
                 guard index < widths.count else { continue }
-                let text = renderInline(cell.inlineChildren)
+                let text = self.renderInline(cell.inlineChildren)
                 let vis = VisibleWidth.measure(text)
                 let padding = max(0, widths[index] - vis)
-                let alignment: Table.ColumnAlignment
-                if index < alignments.count {
-                    alignment = alignments[index] ?? .left
+                let alignment: Table.ColumnAlignment = if index < alignments.count {
+                    alignments[index] ?? .left
                 } else {
-                    alignment = .left
+                    .left
                 }
 
                 let (leftPad, rightPad): (Int, Int)
@@ -217,34 +219,34 @@ private final class Renderer {
                 line += String(repeating: " ", count: leftPad) + text + String(repeating: " ", count: rightPad)
                 line += index == widths.count - 1 ? " │" : " │ "
             }
-            lines.append(line)
+            self.lines.append(line)
         }
 
         renderRow(cells: Array(table.head.cells))
         let separators = widths.map { String(repeating: "─", count: max(1, $0)) }
-        lines.append("├─" + separators.joined(separator: "─┼─") + "─┤")
+        self.lines.append("├─" + separators.joined(separator: "─┼─") + "─┤")
         table.body.rows.forEach { renderRow(cells: Array($0.cells)) }
-        lines.append("")
+        self.lines.append("")
     }
 
     private func renderInline(_ children: LazyMapSequence<MarkupChildren, InlineMarkup>) -> String {
-        renderInlineSequence(children)
+        self.renderInlineSequence(children)
     }
 
-    private func renderInlineSequence<S: Sequence>(_ sequence: S) -> String where S.Element == InlineMarkup {
+    private func renderInlineSequence(_ sequence: some Sequence<InlineMarkup>) -> String {
         var result = ""
         for child in sequence {
             switch child {
             case let text as Markdown.Text:
                 result += text.string
             case let strong as Strong:
-                result += "\u{001B}[1m\(renderInlineSequence(strong.inlineChildren))\u{001B}[0m"
+                result += "\u{001B}[1m\(self.renderInlineSequence(strong.inlineChildren))\u{001B}[0m"
             case let emphasis as Emphasis:
-                result += "\u{001B}[3m\(renderInlineSequence(emphasis.inlineChildren))\u{001B}[0m"
+                result += "\u{001B}[3m\(self.renderInlineSequence(emphasis.inlineChildren))\u{001B}[0m"
             case let code as InlineCode:
                 result += "\u{001B}[90m`\u{001B}[36m\(code.code)\u{001B}[90m`\u{001B}[0m"
             case let link as Link:
-                let label = renderInlineSequence(link.inlineChildren)
+                let label = self.renderInlineSequence(link.inlineChildren)
                 result += "\u{001B}[4;34m\(label)\u{001B}[90m (\(link.destination ?? ""))\u{001B}[0m"
             case _ as SoftBreak:
                 result += " "
@@ -267,27 +269,27 @@ private final class Renderer {
                     continue
                 }
                 if current.isEmpty {
-                    if VisibleWidth.measure(wordString) <= maxWidth {
+                    if VisibleWidth.measure(wordString) <= self.maxWidth {
                         current = wordString
                     } else {
-                        lines.append(contentsOf: breakLongWord(wordString))
+                        self.lines.append(contentsOf: self.breakLongWord(wordString))
                     }
                     continue
                 }
                 let candidate = current + " " + wordString
-                if VisibleWidth.measure(candidate) <= maxWidth {
+                if VisibleWidth.measure(candidate) <= self.maxWidth {
                     current = candidate
                 } else {
-                    lines.append(current)
-                    if VisibleWidth.measure(wordString) <= maxWidth {
+                    self.lines.append(current)
+                    if VisibleWidth.measure(wordString) <= self.maxWidth {
                         current = wordString
                     } else {
-                        lines.append(contentsOf: breakLongWord(wordString))
+                        self.lines.append(contentsOf: self.breakLongWord(wordString))
                         current = ""
                     }
                 }
             }
-            if !current.isEmpty { lines.append(current) }
+            if !current.isEmpty { self.lines.append(current) }
         }
     }
 
@@ -296,7 +298,7 @@ private final class Renderer {
         var current = ""
         for char in word {
             let candidate = current + String(char)
-            if VisibleWidth.measure(candidate) > maxWidth {
+            if VisibleWidth.measure(candidate) > self.maxWidth {
                 if !current.isEmpty {
                     result.append(current)
                     current = String(char)

@@ -11,21 +11,22 @@ final class ChatViewModel {
     init() {
         let terminal = ProcessTerminal()
         // Entire view model is main-actor bound to keep demo state serialized.
-        tui = TUI(terminal: terminal)
+        self.tui = TUI(terminal: terminal)
         // Autocomplete mirrors pi-tui: slash commands + file paths rooted at cwd.
-        autocomplete = CombinedAutocompleteProvider(commands: [DemoCommand()], basePath: FileManager.default.currentDirectoryPath)
-        editor.setAutocompleteProvider(autocomplete)
+        self.autocomplete = CombinedAutocompleteProvider(
+            commands: [DemoCommand()],
+            basePath: FileManager.default.currentDirectoryPath)
+        self.editor.setAutocompleteProvider(self.autocomplete)
     }
 
     // Helper to avoid capturing non-Sendable UI state inside escaping closures.
     func removeLoaderAndAppendReply(loader: Loader, reply: String) {
-        messages.removeChild(loader)
+        self.messages.removeChild(loader)
         let replyMarkdown = MarkdownComponent(text: reply, padding: .init(horizontal: 1, vertical: 0))
-        messages.addChild(replyMarkdown)
-        tui.requestRender()
+        self.messages.addChild(replyMarkdown)
+        self.tui.requestRender()
     }
 }
-
 
 @main
 struct ChatDemo {
@@ -36,7 +37,6 @@ struct ChatDemo {
         vm.tui.addChild(vm.messages)
         vm.tui.addChild(vm.editor)
         vm.tui.setFocus(vm.editor)
-
 
         vm.editor.onSubmit = { value in
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -57,7 +57,7 @@ struct ChatDemo {
                 "That's interesting! Tell me more.",
                 "I see what you mean.",
                 "Fascinating perspective!",
-                "Could you elaborate on that?"
+                "Could you elaborate on that?",
             ]
             let reply = responses.randomElement() ?? "Thanks for sharing!"
             Task { @MainActor [weak vm, loader, reply] in

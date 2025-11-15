@@ -52,8 +52,7 @@ public enum TerminalInput: Sendable {
 public protocol Terminal: AnyObject {
     func start(
         onInput: @escaping (TerminalInput) -> Void,
-        onResize: @escaping () -> Void
-    ) throws
+        onResize: @escaping () -> Void) throws
 
     func stop()
     func write(_ data: String)
@@ -103,8 +102,8 @@ public final class ProcessTerminal: Terminal {
     /// without starting Dispatch sources. Only used in unit tests.
     func parseForTests(_ raw: String) -> [TerminalInput] {
         var captured: [TerminalInput] = []
-        inputHandler = { captured.append($0) }
-        handleRawChunk(raw)
+        self.inputHandler = { captured.append($0) }
+        self.handleRawChunk(raw)
         return captured
     }
 
@@ -114,17 +113,17 @@ public final class ProcessTerminal: Terminal {
 
     public func start(
         onInput: @escaping (TerminalInput) -> Void,
-        onResize: @escaping () -> Void
-    ) throws {
-        guard stdinSource == nil else { throw TerminalError.alreadyRunning }
+        onResize: @escaping () -> Void) throws
+    {
+        guard self.stdinSource == nil else { throw TerminalError.alreadyRunning }
 
-        inputHandler = onInput
-        resizeHandler = onResize
+        self.inputHandler = onInput
+        self.resizeHandler = onResize
 
-        try enableRawMode()
-        write("\u{001B}[?2004h") // bracketed paste on
+        try self.enableRawMode()
+        self.write("\u{001B}[?2004h") // bracketed paste on
 
-        let source = DispatchSource.makeReadSource(fileDescriptor: inputFD.rawValue, queue: .main)
+        let source = DispatchSource.makeReadSource(fileDescriptor: self.inputFD.rawValue, queue: .main)
         source.setEventHandler { [weak self] in
             guard let self else { return }
             var buffer = [UInt8](repeating: 0, count: 4096)
@@ -141,7 +140,7 @@ public final class ProcessTerminal: Terminal {
             }
         }
         source.resume()
-        stdinSource = source
+        self.stdinSource = source
 
         signal(SIGWINCH, SIG_IGN)
         let resizeSource = DispatchSource.makeSignalSource(signal: SIGWINCH, queue: .main)
@@ -153,140 +152,140 @@ public final class ProcessTerminal: Terminal {
     }
 
     public func stop() {
-        stdinSource?.cancel()
-        stdinSource = nil
-        resizeSource?.cancel()
-        resizeSource = nil
+        self.stdinSource?.cancel()
+        self.stdinSource = nil
+        self.resizeSource?.cancel()
+        self.resizeSource = nil
 
-        write("\u{001B}[?2004l") // bracketed paste off
-        disableRawMode()
+        self.write("\u{001B}[?2004l") // bracketed paste off
+        self.disableRawMode()
 
-        inputHandler = nil
-        resizeHandler = nil
-        pendingInput.removeAll(keepingCapacity: false)
-        pasteBuffer.removeAll(keepingCapacity: false)
-        isInBracketedPaste = false
+        self.inputHandler = nil
+        self.resizeHandler = nil
+        self.pendingInput.removeAll(keepingCapacity: false)
+        self.pasteBuffer.removeAll(keepingCapacity: false)
+        self.isInBracketedPaste = false
     }
 
     public func write(_ data: String) {
         guard let payload = data.data(using: .utf8) else { return }
-        try? outputFD.writeAll(payload)
+        try? self.outputFD.writeAll(payload)
     }
 
     public var columns: Int {
-        currentTerminalSize().columns
+        self.currentTerminalSize().columns
     }
 
     public var rows: Int {
-        currentTerminalSize().rows
+        self.currentTerminalSize().rows
     }
 
     public func moveBy(lines: Int) {
         guard lines != 0 else { return }
         if lines > 0 {
-            write(ANSI.cursorDown(lines))
+            self.write(ANSI.cursorDown(lines))
         } else {
-            write(ANSI.cursorUp(-lines))
+            self.write(ANSI.cursorUp(-lines))
         }
     }
 
     public func hideCursor() {
-        write("\u{001B}[?25l")
+        self.write("\u{001B}[?25l")
     }
 
     public func showCursor() {
-        write("\u{001B}[?25h")
+        self.write("\u{001B}[?25h")
     }
 
     public func clearLine() {
-        write(ANSI.clearLine)
+        self.write(ANSI.clearLine)
     }
 
     public func clearFromCursor() {
-        write(ANSI.clearToScreenEnd)
+        self.write(ANSI.clearToScreenEnd)
     }
 
     public func clearScreen() {
-        write(ANSI.clearScreen)
+        self.write(ANSI.clearScreen)
     }
 
     // MARK: - Raw mode
 
     private func enableRawMode() throws {
         var term = termios()
-        guard tcgetattr(inputFD.rawValue, &term) == 0 else { return }
-        originalTermios = term
+        guard tcgetattr(self.inputFD.rawValue, &term) == 0 else { return }
+        self.originalTermios = term
         var raw = term
         cfmakeraw(&raw)
-        if tcsetattr(inputFD.rawValue, TCSAFLUSH, &raw) == 0 {
-            rawModeEnabled = true
+        if tcsetattr(self.inputFD.rawValue, TCSAFLUSH, &raw) == 0 {
+            self.rawModeEnabled = true
         }
     }
 
     private func disableRawMode() {
-        guard rawModeEnabled else { return }
-        var term = originalTermios
-        _ = tcsetattr(inputFD.rawValue, TCSAFLUSH, &term)
-        rawModeEnabled = false
+        guard self.rawModeEnabled else { return }
+        var term = self.originalTermios
+        _ = tcsetattr(self.inputFD.rawValue, TCSAFLUSH, &term)
+        self.rawModeEnabled = false
     }
 
     // MARK: - Input parsing
 
     fileprivate func handleRawChunk(_ chunk: String) {
         guard !chunk.isEmpty else { return }
-        inputHandler?(.raw(chunk))
-        pendingInput.append(chunk)
-        processPendingInput()
+        self.inputHandler?(.raw(chunk))
+        self.pendingInput.append(chunk)
+        self.processPendingInput()
     }
 
     private func processPendingInput() {
-        while !pendingInput.isEmpty {
-            if isInBracketedPaste {
+        while !self.pendingInput.isEmpty {
+            if self.isInBracketedPaste {
                 if let endRange = pendingInput.range(of: Self.bracketedPasteEnd) {
-                    pasteBuffer.append(String(pendingInput[..<endRange.lowerBound]))
-                    pendingInput.removeSubrange(pendingInput.startIndex..<endRange.upperBound)
-                    isInBracketedPaste = false
-                    inputHandler?(.paste(pasteBuffer))
-                    pasteBuffer.removeAll(keepingCapacity: false)
+                    self.pasteBuffer.append(String(self.pendingInput[..<endRange.lowerBound]))
+                    self.pendingInput.removeSubrange(self.pendingInput.startIndex..<endRange.upperBound)
+                    self.isInBracketedPaste = false
+                    self.inputHandler?(.paste(self.pasteBuffer))
+                    self.pasteBuffer.removeAll(keepingCapacity: false)
                     continue
                 } else {
-                    pasteBuffer.append(pendingInput)
-                    pendingInput.removeAll(keepingCapacity: false)
+                    self.pasteBuffer.append(self.pendingInput)
+                    self.pendingInput.removeAll(keepingCapacity: false)
                     return
                 }
             }
 
-            if pendingInput.hasPrefix(Self.bracketedPasteStart) {
-                pendingInput.removeFirstCharacters(Self.bracketedPasteStart.count)
-                isInBracketedPaste = true
+            if self.pendingInput.hasPrefix(Self.bracketedPasteStart) {
+                self.pendingInput.removeFirstCharacters(Self.bracketedPasteStart.count)
+                self.isInBracketedPaste = true
                 continue
             }
 
             // Normalize common Enter-with-modifier sequences emitted as raw data.
-            if pendingInput.hasPrefix(Self.shiftEnterCSI) {
-                emitKey(.enter, modifiers: [.shift])
-                pendingInput.removeFirstCharacters(Self.shiftEnterCSI.count)
+            if self.pendingInput.hasPrefix(Self.shiftEnterCSI) {
+                self.emitKey(.enter, modifiers: [.shift])
+                self.pendingInput.removeFirstCharacters(Self.shiftEnterCSI.count)
                 continue
             }
-            if pendingInput.hasPrefix(Self.optionEnterCSI) {
-                emitKey(.enter, modifiers: [.option])
-                pendingInput.removeFirstCharacters(Self.optionEnterCSI.count)
+            if self.pendingInput.hasPrefix(Self.optionEnterCSI) {
+                self.emitKey(.enter, modifiers: [.option])
+                self.pendingInput.removeFirstCharacters(Self.optionEnterCSI.count)
                 continue
             }
-            if pendingInput.hasPrefix(Self.optionEnterMeta) {
-                emitKey(.enter, modifiers: [.option])
-                pendingInput.removeFirstCharacters(Self.optionEnterMeta.count)
+            if self.pendingInput.hasPrefix(Self.optionEnterMeta) {
+                self.emitKey(.enter, modifiers: [.option])
+                self.pendingInput.removeFirstCharacters(Self.optionEnterMeta.count)
                 continue
             }
 
             if let (event, consumed) = parseEscapeSequence() {
-                emitKey(event.0, modifiers: event.1)
-                pendingInput.removeFirstCharacters(consumed)
+                self.emitKey(event.0, modifiers: event.1)
+                self.pendingInput.removeFirstCharacters(consumed)
                 continue
             }
 
-            let char = pendingInput.removeFirst()
-            handleCharacter(char)
+            let char = self.pendingInput.removeFirst()
+            self.handleCharacter(char)
         }
     }
 
@@ -294,22 +293,22 @@ public final class ProcessTerminal: Terminal {
         guard let scalar = char.unicodeScalars.first else { return }
         switch scalar.value {
         case 0x0D:
-            emitKey(.enter)
+            self.emitKey(.enter)
         case 0x0A:
-            emitKey(.character("\n"))
+            self.emitKey(.character("\n"))
         case 0x09:
-            emitKey(.tab)
+            self.emitKey(.tab)
         case 0x7F, 0x08:
-            emitKey(.backspace)
+            self.emitKey(.backspace)
         default:
             if scalar.value < 0x20 {
                 if let letterScalar = UnicodeScalar(scalar.value + 0x60) {
-                    emitKey(.character(Character(letterScalar)), modifiers: [.control])
+                    self.emitKey(.character(Character(letterScalar)), modifiers: [.control])
                 } else {
-                    emitKey(.unknown(sequence: String(char)))
+                    self.emitKey(.unknown(sequence: String(char)))
                 }
             } else {
-                emitKey(.character(char))
+                self.emitKey(.character(char))
             }
         }
     }
@@ -319,19 +318,19 @@ public final class ProcessTerminal: Terminal {
         // only see semantic keys + modifiers. This mirrors xterm-style
         // modifier encodings (CSI 1;{mod}<letter>/~) and the common "Meta"
         // prefix (ESC + key) used by macOS terminals for Option/Alt.
-        guard pendingInput.first == "\u{001B}" else { return nil }
+        guard self.pendingInput.first == "\u{001B}" else { return nil }
         let scalars = Array(pendingInput.unicodeScalars)
         guard scalars.count >= 2 else { return nil }
         let second = scalars[1]
 
         if second == "[" {
             guard let (sequence, length) = extractCSISequence(from: scalars) else { return nil }
-            let parsed = mapCSISequence(sequence)
+            let parsed = self.mapCSISequence(sequence)
             return (parsed, length)
         } else if second == "O" {
             guard scalars.count >= 3 else { return nil }
             let seq = String(String.UnicodeScalarView(scalars[0..<3]))
-            return (mapSS3Sequence(seq), 3)
+            return (self.mapSS3Sequence(seq), 3)
         } else {
             // ESC + key is treated as Option/Meta on most terminals.
             let consumed = 2
@@ -359,7 +358,7 @@ public final class ProcessTerminal: Terminal {
         guard scalars.count >= 3 else { return nil }
         for index in 2..<scalars.count {
             let value = scalars[index].value
-            if value >= 0x40 && value <= 0x7E {
+            if value >= 0x40, value <= 0x7E {
                 let length = index + 1
                 let sequence = String(String.UnicodeScalarView(scalars[0..<length]))
                 return (sequence, length)
@@ -368,6 +367,7 @@ public final class ProcessTerminal: Terminal {
         return nil
     }
 
+    // swiftlint:disable cyclomatic_complexity
     private func mapCSISequence(_ sequence: String) -> (TerminalKey, KeyModifiers) {
         // Strip leading ESC[ to isolate params/final byte.
         guard sequence.hasPrefix("\u{001B}[") else { return (.unknown(sequence: sequence), []) }
@@ -375,7 +375,7 @@ public final class ProcessTerminal: Terminal {
         guard let final = body.last else { return (.unknown(sequence: sequence), []) }
         let paramString = body.dropLast()
         let params = paramString.isEmpty ? [] : paramString.split(separator: ";").compactMap { Int($0) }
-        let modifiers = params.count >= 2 ? mapModifiers(from: params.last ?? 1) : []
+        let modifiers = params.count >= 2 ? self.mapModifiers(from: params.last ?? 1) : []
         let primary = params.first ?? 0
 
         switch final {
@@ -414,21 +414,23 @@ public final class ProcessTerminal: Terminal {
         }
     }
 
+    // swiftlint:enable cyclomatic_complexity
+
     private func mapSS3Sequence(_ sequence: String) -> (TerminalKey, KeyModifiers) {
         switch sequence {
-        case "\u{001B}OP": return (.function(1), [])
-        case "\u{001B}OQ": return (.function(2), [])
-        case "\u{001B}OR": return (.function(3), [])
-        case "\u{001B}OS": return (.function(4), [])
-        case "\u{001B}OH": return (.home, [])
-        case "\u{001B}OF": return (.end, [])
+        case "\u{001B}OP": (.function(1), [])
+        case "\u{001B}OQ": (.function(2), [])
+        case "\u{001B}OR": (.function(3), [])
+        case "\u{001B}OS": (.function(4), [])
+        case "\u{001B}OH": (.home, [])
+        case "\u{001B}OF": (.end, [])
         default:
-            return (.unknown(sequence: sequence), [])
+            (.unknown(sequence: sequence), [])
         }
     }
 
     private func emitKey(_ key: TerminalKey, modifiers: KeyModifiers = []) {
-        inputHandler?(.key(key, modifiers: modifiers))
+        self.inputHandler?(.key(key, modifiers: modifiers))
     }
 
     private func mapModifiers(from csiModifier: Int) -> KeyModifiers {
@@ -437,24 +439,24 @@ public final class ProcessTerminal: Terminal {
         // 8=Shift+Alt+Ctrl. We also map 9..12 to Meta combinations used by
         // some terminals just in case.
         switch csiModifier {
-        case 2: return [.shift]
-        case 3: return [.option]
-        case 4: return [.shift, .option]
-        case 5: return [.control]
-        case 6: return [.shift, .control]
-        case 7: return [.option, .control]
-        case 8: return [.shift, .option, .control]
-        case 9: return [.meta]
-        case 10: return [.shift, .meta]
-        case 11: return [.meta, .control]
-        case 12: return [.shift, .meta, .control]
-        default: return []
+        case 2: [.shift]
+        case 3: [.option]
+        case 4: [.shift, .option]
+        case 5: [.control]
+        case 6: [.shift, .control]
+        case 7: [.option, .control]
+        case 8: [.shift, .option, .control]
+        case 9: [.meta]
+        case 10: [.shift, .meta]
+        case 11: [.meta, .control]
+        case 12: [.shift, .meta, .control]
+        default: []
         }
     }
 
     private func currentTerminalSize() -> (columns: Int, rows: Int) {
         var windowSize = winsize()
-        if ioctl(outputFD.rawValue, TIOCGWINSZ, &windowSize) == 0 {
+        if ioctl(self.outputFD.rawValue, TIOCGWINSZ, &windowSize) == 0 {
             let cols = Int(windowSize.ws_col)
             let rows = Int(windowSize.ws_row)
             return (max(cols, 1), max(rows, 1))
@@ -465,8 +467,8 @@ public final class ProcessTerminal: Terminal {
 
 // MARK: - Helpers
 
-private extension FileDescriptor {
-    func writeAll(_ data: Data) throws {
+extension FileDescriptor {
+    fileprivate func writeAll(_ data: Data) throws {
         try data.withUnsafeBytes { buffer in
             guard let base = buffer.baseAddress else { return }
             var remaining = buffer.count
@@ -480,8 +482,8 @@ private extension FileDescriptor {
     }
 }
 
-private extension String {
-    mutating func removeFirstCharacters(_ count: Int) {
+extension String {
+    fileprivate mutating func removeFirstCharacters(_ count: Int) {
         guard count > 0, count <= self.count else { return }
         let end = index(startIndex, offsetBy: count)
         removeSubrange(startIndex..<end)

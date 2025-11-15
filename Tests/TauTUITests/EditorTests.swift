@@ -49,12 +49,12 @@ struct EditorTests {
         editor.setText("hello world")
         editor.handle(input: .key(.home, modifiers: []))
         editor.handle(input: .key(.character("k"), modifiers: [.control]))
-        #expect(editor.getText() == "")
+        #expect(editor.getText().isEmpty)
 
         editor.setText("hello world")
         editor.handle(input: .key(.end, modifiers: []))
         editor.handle(input: .key(.character("u"), modifiers: [.control]))
-        #expect(editor.getText() == "")
+        #expect(editor.getText().isEmpty)
     }
 
     @Test

@@ -35,4 +35,3 @@ struct EditorPasteTests {
         #expect(submitted?.starts(with: "hello") == true)
     }
 }
-

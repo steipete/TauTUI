@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift 6.2
+        uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: "6.2"
+
+      - name: Install linters (SwiftLint & SwiftFormat)
+        run: |
+          brew install swiftlint swiftformat
+
+      - name: SwiftLint
+        run: swiftlint --config .swiftlint.yml
+
+      - name: SwiftFormat (lint mode)
+        run: swiftformat --lint . --config .swiftformat
+
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Swift 6.2
+        uses: SwiftyLab/setup-swift@v1
+        with:
+          swift-version: "6.2"
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build --configuration debug
+
+      - name: Test
+        run: swift test --parallel

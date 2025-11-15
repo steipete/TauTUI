@@ -9,12 +9,12 @@ struct RendererSnapshotTests {
         let terminal = VirtualTerminal(columns: 30, rows: 10)
         let tui = TUI(terminal: terminal, renderScheduler: { $0() })
         let markdown = MarkdownComponent(text: """
-# Title
-- item
-```
-code
-```
-""", padding: .init(horizontal: 0, vertical: 0))
+        # Title
+        - item
+        ```
+        code
+        ```
+        """, padding: .init(horizontal: 0, vertical: 0))
         tui.addChild(markdown)
         try tui.start()
         let output = terminal.outputLog.joined(separator: "\n")
@@ -40,4 +40,3 @@ code
         #expect(!output.contains("Gamma")) // clipped to maxVisible
     }
 }
-

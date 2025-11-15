@@ -1,7 +1,7 @@
 /// Single-line text input with horizontal scrolling and fake cursor rendering.
 public final class Input: Component {
     public var value: String {
-        didSet { cursor = min(cursor, value.count) }
+        didSet { self.cursor = min(self.cursor, self.value.count) }
     }
 
     private var cursor: Int
@@ -13,8 +13,8 @@ public final class Input: Component {
     }
 
     public func setValue(_ newValue: String) {
-        value = newValue
-        cursor = min(cursor, value.count)
+        self.value = newValue
+        self.cursor = min(self.cursor, self.value.count)
     }
 
     public func render(width: Int) -> [String] {
@@ -22,8 +22,10 @@ public final class Input: Component {
         let available = width - prompt.count
         guard available > 0 else { return [prompt] }
 
-        let (visibleText, cursorDisplayIndex) = windowedValue(available: available)
-        let cursorChar = cursorDisplayIndex < visibleText.count ? visibleText[visibleText.index(visibleText.startIndex, offsetBy: cursorDisplayIndex)] : " "
+        let (visibleText, cursorDisplayIndex) = self.windowedValue(available: available)
+        let cursorChar = cursorDisplayIndex < visibleText.count ? visibleText[visibleText.index(
+            visibleText.startIndex,
+            offsetBy: cursorDisplayIndex)] : " "
         var rendered = visibleText
         if cursorDisplayIndex < visibleText.count {
             let idx = rendered.index(rendered.startIndex, offsetBy: cursorDisplayIndex)
@@ -40,38 +42,38 @@ public final class Input: Component {
 
     public func handle(input: TerminalInput) {
         switch input {
-        case .key(let key, let modifiers):
-            handleKey(key, modifiers: modifiers)
-        case .paste(let text):
-            insert(text)
-        case .raw(let data):
-            data.forEach { insert(String($0)) }
+        case let .key(key, modifiers):
+            self.handleKey(key, modifiers: modifiers)
+        case let .paste(text):
+            self.insert(text)
+        case let .raw(data):
+            data.forEach { self.insert(String($0)) }
         }
     }
 
     private func handleKey(_ key: TerminalKey, modifiers: KeyModifiers) {
         switch key {
-        case .character(let char):
-            insert(String(char))
+        case let .character(char):
+            self.insert(String(char))
         case .enter:
-            onSubmit?(value)
+            self.onSubmit?(self.value)
         case .backspace:
-            guard cursor > 0 else { return }
-            let index = value.index(value.startIndex, offsetBy: cursor - 1)
-            value.remove(at: index)
-            cursor -= 1
+            guard self.cursor > 0 else { return }
+            let index = self.value.index(self.value.startIndex, offsetBy: self.cursor - 1)
+            self.value.remove(at: index)
+            self.cursor -= 1
         case .delete:
-            guard cursor < value.count else { return }
-            let index = value.index(value.startIndex, offsetBy: cursor)
-            value.remove(at: index)
+            guard self.cursor < self.value.count else { return }
+            let index = self.value.index(self.value.startIndex, offsetBy: self.cursor)
+            self.value.remove(at: index)
         case .arrowLeft:
-            cursor = max(0, cursor - 1)
+            self.cursor = max(0, self.cursor - 1)
         case .arrowRight:
-            cursor = min(value.count, cursor + 1)
+            self.cursor = min(self.value.count, self.cursor + 1)
         case .home:
-            cursor = 0
+            self.cursor = 0
         case .end:
-            cursor = value.count
+            self.cursor = self.value.count
         default:
             break
         }
@@ -79,24 +81,24 @@ public final class Input: Component {
 
     private func insert(_ string: String) {
         guard !string.isEmpty else { return }
-        let idx = value.index(value.startIndex, offsetBy: cursor)
-        value.insert(contentsOf: string, at: idx)
-        cursor += string.count
+        let idx = self.value.index(self.value.startIndex, offsetBy: self.cursor)
+        self.value.insert(contentsOf: string, at: idx)
+        self.cursor += string.count
     }
 
     private func windowedValue(available: Int) -> (String, Int) {
-        if value.count <= available {
-            return (value, cursor)
+        if self.value.count <= available {
+            return (self.value, self.cursor)
         }
-        let cursorAtEnd = cursor == value.count
+        let cursorAtEnd = self.cursor == self.value.count
         let scrollWidth = cursorAtEnd ? available - 1 : available
         let half = scrollWidth / 2
-        var startIndex = cursor - half
-        startIndex = max(0, min(startIndex, value.count - scrollWidth))
-        let start = value.index(value.startIndex, offsetBy: startIndex)
-        let end = value.index(start, offsetBy: min(scrollWidth, value.count - startIndex))
+        var startIndex = self.cursor - half
+        startIndex = max(0, min(startIndex, self.value.count - scrollWidth))
+        let start = self.value.index(self.value.startIndex, offsetBy: startIndex)
+        let end = self.value.index(start, offsetBy: min(scrollWidth, self.value.count - startIndex))
         let visible = String(value[start..<end])
-        let cursorDisplay = cursorAtEnd ? visible.count : cursor - startIndex
+        let cursorDisplay = cursorAtEnd ? visible.count : self.cursor - startIndex
         return (visible, cursorDisplay)
     }
 }

@@ -6,12 +6,16 @@ enum Ansi {
     private static let escapeRegex: NSRegularExpression = {
         // Matches CSI sequences and single-character escapes.
         let pattern = "\u{001B}\\[[0-9;?]*[ -/]*[@-~]|\u{001B}[()][0-2AB]|\u{001B}."
-        return try! NSRegularExpression(pattern: pattern, options: [])
+        do {
+            return try NSRegularExpression(pattern: pattern, options: [])
+        } catch {
+            preconditionFailure("Failed to compile ANSI regex: \(error)")
+        }
     }()
 
     static func stripCodes(_ text: String) -> String {
         let range = NSRange(location: 0, length: text.utf16.count)
-        return escapeRegex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
+        return self.escapeRegex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
     }
 
     static func normalizeTabs(_ text: String, spacesPerTab: Int) -> String {

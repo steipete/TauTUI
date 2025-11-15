@@ -6,10 +6,10 @@ struct MarkdownCodeTests {
     @Test
     func codeBlockRendersFenceAndContent() throws {
         let source = """
-```swift
-print("hello")
-```
-"""
+        ```swift
+        print("hello")
+        ```
+        """
         let component = MarkdownComponent(text: source, padding: .init(horizontal: 0, vertical: 0))
         let lines = component.render(width: 40).map { Ansi.stripCodes($0) }
         #expect(lines.contains(where: { $0.contains("```swift") }))

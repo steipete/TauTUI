@@ -12,8 +12,8 @@ public protocol Component: AnyObject {
     func handle(input: TerminalInput)
 }
 
-public extension Component {
-    func handle(input: TerminalInput) {
+extension Component {
+    public func handle(input: TerminalInput) {
         // Default: ignore input.
     }
 }
@@ -28,21 +28,21 @@ open class Container: Component {
     }
 
     open func addChild(_ child: Component) {
-        children.append(child)
+        self.children.append(child)
     }
 
     open func removeChild(_ child: Component) {
         guard let index = children.firstIndex(where: { $0 === child }) else {
             return
         }
-        children.remove(at: index)
+        self.children.remove(at: index)
     }
 
     open func clear() {
-        children.removeAll()
+        self.children.removeAll()
     }
 
     open func render(width: Int) -> [String] {
-        children.flatMap { $0.render(width: width) }
+        self.children.flatMap { $0.render(width: width) }
     }
 }

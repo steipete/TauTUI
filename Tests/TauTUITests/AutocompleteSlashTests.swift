@@ -24,7 +24,7 @@ struct AutocompleteSlashTests {
             return
         }
 
-        let values = result.items.map { $0.value }
+        let values = result.items.map(\.value)
         #expect(values == ["clear", "clap", "Close"])
         #expect(result.prefix == "/cl")
     }
@@ -32,7 +32,7 @@ struct AutocompleteSlashTests {
     @Test
     func argumentCompletionsStopAtSpace() throws {
         let provider = CombinedAutocompleteProvider(commands: [
-            Command(name: "say")
+            Command(name: "say"),
         ])
 
         let lines = ["/say hello"]
@@ -40,4 +40,3 @@ struct AutocompleteSlashTests {
         #expect(result == nil) // no arg completions provided -> nil
     }
 }
-

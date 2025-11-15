@@ -1,5 +1,5 @@
-import Testing
 import Foundation
+import Testing
 @testable import TauTUI
 
 @Suite("Autocomplete file suggestions")
@@ -10,8 +10,12 @@ struct AutocompleteFileTests {
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
 
-        try FileManager.default.createDirectory(at: temp.appendingPathComponent("docs"), withIntermediateDirectories: false)
-        try FileManager.default.createDirectory(at: temp.appendingPathComponent("Apps"), withIntermediateDirectories: false)
+        try FileManager.default.createDirectory(
+            at: temp.appendingPathComponent("docs"),
+            withIntermediateDirectories: false)
+        try FileManager.default.createDirectory(
+            at: temp.appendingPathComponent("Apps"),
+            withIntermediateDirectories: false)
         FileManager.default.createFile(atPath: temp.appendingPathComponent("zeta.txt").path, contents: Data())
         FileManager.default.createFile(atPath: temp.appendingPathComponent("alpha.log").path, contents: Data())
 
@@ -22,7 +26,7 @@ struct AutocompleteFileTests {
             Issue.record("expected suggestions")
             return
         }
-        let labels = items.map { $0.label }
+        let labels = items.map(\.label)
         #expect(labels.prefix(2) == ["Apps/", "docs/"]) // directories first, alpha sort case-insensitive
         #expect(labels.suffix(2) == ["alpha.log", "zeta.txt"]) // files sorted after dirs
     }
@@ -44,7 +48,7 @@ struct AutocompleteFileTests {
             Issue.record("expected suggestions")
             return
         }
-        let values = Set(items.map { $0.value })
+        let values = Set(items.map(\.value))
         #expect(values.contains("image.png"))
         #expect(values.contains("note.md"))
         #expect(!values.contains("archive.bin")) // filtered out as non-attachable
@@ -58,7 +62,9 @@ struct AutocompleteFileTests {
 
         // create 3 dirs + 10 files (13 total) to ensure capping at 10
         for name in ["a", "b", "c"] {
-            try FileManager.default.createDirectory(at: temp.appendingPathComponent(name), withIntermediateDirectories: false)
+            try FileManager.default.createDirectory(
+                at: temp.appendingPathComponent(name),
+                withIntermediateDirectories: false)
         }
         for i in 0..<10 {
             FileManager.default.createFile(atPath: temp.appendingPathComponent("file\(i).txt").path, contents: Data())
@@ -72,7 +78,7 @@ struct AutocompleteFileTests {
         }
         #expect(items.count == 10)
         // Directories should still be first even when capped.
-        let labels = items.map { $0.label }
+        let labels = items.map(\.label)
         #expect(labels.prefix(3).allSatisfy { $0.hasSuffix("/") })
     }
 }
