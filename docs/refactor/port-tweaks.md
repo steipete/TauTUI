@@ -19,12 +19,10 @@ These tweaks are low-to-medium effort improvements identified during the port. T
 - Option variants for arrows/backspace/delete are surfaced as modifiers so components can offer word motions/deletions without manual escape parsing.
 **Benefit:** Cleaner component code, fewer corner cases, easier to add new shortcuts.
 
-## 4) Strengthen Markdown Table Fidelity (Optional)
+## 4) Strengthen Markdown Table Fidelity (In Progress)
 **Problem:** Table rendering is simplified vs. pi-tui.
-**Plan:**
-- Implement column alignment/padding more closely to upstream; add width clamping tests.
-- Add snapshot-like tests for tables (ANSI stripped) mirroring upstream cases.
-**Benefit:** Higher parity; safer future merges when pi-tui changes table logic.
+**Action now:** Add a regression test for table alignment to guard the current behavior before changing it, capturing baseline.
+**Next:** Mirror upstream alignment/padding and update snapshots accordingly.
 
 ## 5) Snapshot Tests for Renderer (Done — basic coverage)
 **Problem:** Differential renderer wasn’t guarded by golden outputs.
