@@ -1,64 +1,224 @@
 # TauTUI
 
-TauTUI is an idiomatic Swift 6 port of [@mariozechner/pi-tui](https://github.com/badlogic/pi-mono/tree/main/packages/tui), Mario Zechner’s TypeScript terminal UI framework. It delivers the same feature set—differential rendering with synchronized output, bracketed paste handling, slash/file autocomplete, Markdown/Text components, SelectLists, spinners, editor, and VirtualTerminal harness—expressed with Swift concurrency, value types, and strong typing.
+TauTUI is a Swift 6 port of [@mariozechner/pi-tui](https://github.com/badlogic/pi-mono/tree/main/packages/tui): the same differential renderer, bracketed paste handling, autocomplete, and component set—implemented with Swift concurrency, value semantics, and native terminal plumbing for macOS + Linux.
 
 ## Features
-- **Differential renderer** with CSI 2026 synchronized output and resize-aware fallbacks.
-- **Terminal plumbing**: raw-mode `ProcessTerminal`, key/modifier normalization, optional `VirtualTerminal` for tests.
-- **Rich editor + autocomplete**: slash-command + filesystem completion, Tab-forced suggestions, paste markers, modifier-aware shortcuts.
-- **Components**: Markdown (with RGB background/foreground), Text, Input, SelectList, Loader, Spacer, plus utilities like `VisibleWidth`.
-- **Examples & tools**: `ChatDemo` mirrors `test/chat-simple.ts`, and `KeyTester` is the Swift rewrite of pi-tui’s key logger.
-- **Tests**: SwiftPM test suite ports the Node specs (markdown rendering, autocomplete, editor behaviors, renderer snapshots).
+
+- **Differential Rendering** – Three rendering strategies (first frame, resize/full clear, partial diff) wrapped in CSI 2026 synchronized output for flicker‑free updates.
+- **Bracketed Paste Mode** – Handles large pastes via `[paste #n ...]` markers and replaces them on submit, just like pi-tui.
+- **Component-based API** – `Component` protocol with `render(width:)` / `handle(input:)`, plus `Container` for composition.
+- **Built-in Components** – `Text`, `MarkdownComponent`, `Input`, `Editor`, `SelectList`, `Loader`, `Spacer`.
+- **Autocomplete** – Slash-command + filesystem completion via `CombinedAutocompleteProvider`, including `@` attachment filtering.
+- **Terminal Implementations** – `ProcessTerminal` (raw mode, modifier-aware key parsing) and `VirtualTerminal` (test harness).
 
 ## Quick Start
 
-Add TauTUI as a dependency and build an app:
+Add TauTUI to your `Package.swift`:
 
 ```swift
 // swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
+    name: "Demo",
+    platforms: [.macOS(.v13)],
     dependencies: [
-        .package(url: "https://github.com/yourname/TauTUI.git", branch: "main"),
+        .package(url: "https://github.com/steipete/TauTUI.git", branch: "main"),
     ],
     targets: [
         .executableTarget(
             name: "Demo",
             dependencies: [
                 .product(name: "TauTUI", package: "TauTUI"),
-            ]
-        )
-    ]
-)
+            ]),
+    ])
 ```
 
 ```swift
 import TauTUI
 
-let terminal = ProcessTerminal()
-let tui = TUI(terminal: terminal)
-let text = Text(text: "Welcome to TauTUI!")
-let editor = Editor()
-editor.onSubmit = { value in
-    tui.addChild(MarkdownComponent(text: value))
-    tui.requestRender()
+@main
+struct DemoApp {
+    static func main() throws {
+        let terminal = ProcessTerminal()
+        let tui = TUI(terminal: terminal)
+
+        let text = Text(text: "Welcome to TauTUI!", paddingX: 1, paddingY: 1)
+        tui.addChild(text)
+
+        let editor = Editor()
+        editor.onSubmit = { value in
+            tui.addChild(MarkdownComponent(text: value))
+            tui.requestRender()
+        }
+        tui.addChild(editor)
+        tui.setFocus(editor)
+
+        try tui.start()
+        RunLoop.main.run()
+    }
 }
-tui.addChild(text)
-tui.addChild(editor)
-tui.setFocus(editor)
-try tui.start()
-RunLoop.main.run()
 ```
 
-## Examples
-- `swift run ChatDemo` — Chat-like UI with slash commands, autocomplete, loader, and Markdown components.
-- `swift run KeyTester` — Interactive logger that prints raw input, modifiers, and codes for debugging terminal keybindings.
+## Core API
 
-## Platform Support
-- ✅ macOS 13+ (Swift 6)
-- ✅ Linux (glibc)
-- ❌ Windows consoles (not supported)
+### TUI
+
+```swift
+let tui = TUI(terminal: ProcessTerminal())
+tui.addChild(component)
+tui.removeChild(component)
+tui.requestRender()
+try tui.start()
+tui.stop()
+```
+
+### Component
+
+Every component conforms to:
+
+```swift
+public protocol Component: AnyObject {
+    func render(width: Int) -> [String]
+    func handle(input: TerminalInput)
+}
+```
+
+`Container` is a convenience component that renders its children sequentially.
+
+## Built-in Components
+
+### Text
+
+```swift
+let text = Text(text: "Hello", paddingX: 2, paddingY: 1)
+text.background = Text.Background(red: 30, green: 30, blue: 40)
+```
+
+Word-wrapped text with optional RGB background and padding, cached per width.
+
+### MarkdownComponent
+
+```swift
+let md = MarkdownComponent(
+    text: "# Heading", 
+    padding: .init(horizontal: 1, vertical: 1),
+    background: Text.Background(red: 52, green: 53, blue: 65),
+    foreground: .init(red: 230, green: 230, blue: 230))
+```
+
+Renders headings, lists, tables, blockquotes, and fenced code via `swift-markdown`, with RGB background + foreground tints.
+
+### Input
+
+Single-line editor with fake cursor and horizontal scrolling:
+
+```swift
+let input = Input()
+input.onSubmit = { print($0) }
+input.setValue("Initial text")
+```
+
+### Editor
+
+Full multiline editor with autocomplete, modifiers, paste markers:
+
+```swift
+let editor = Editor()
+editor.onChange = { print("Changed", $0) }
+editor.onSubmit = { print("Submitted", $0) }
+editor.setAutocompleteProvider(CombinedAutocompleteProvider(commands: [DemoCommand()]))
+```
+
+Key bindings include Enter/Shift+Enter, Ctrl+K/U/W/A/E, Option word motion, Tab for autocomplete, Escape to cancel, etc.
+
+### SelectList
+
+```swift
+let list = SelectList(items: [
+    SelectItem(value: "clear", label: "Clear", description: "Remove messages"),
+    SelectItem(value: "delete", label: "Delete", description: "Delete last"),
+])
+list.onSelect = { print($0.value) }
+list.onCancel = { print("cancel") }
+```
+
+Scrollable list with arrow navigation, Enter selection, Escape cancel.
+
+### Loader & Spacer
+
+`Loader` renders the Braille spinner and notifies its `TUI`/closure every tick; `Spacer` inserts empty lines for layout.
+
+## Autocomplete
+
+`CombinedAutocompleteProvider` supports slash commands, inline command items, file paths, and attachment filtering.
+
+```swift
+let provider = CombinedAutocompleteProvider(
+    commands: [DemoCommand()],
+    staticCommands: [AutocompleteItem(value: "clear", label: "/clear")],
+    basePath: FileManager.default.currentDirectoryPath)
+
+struct DemoCommand: SlashCommand {
+    let name = "clear"
+    let description: String? = "Clear all messages"
+    func argumentCompletions(prefix: String) -> [AutocompleteItem] { [] }
+}
+```
+
+Features:
+- Type `/` for commands; Tab auto-completes.
+- Tab also forces file completion (`./`, `~/`, `../`, relative paths).
+- `@` prefix restricts suggestions to attachable files (text + common images).
+- Provider exposes `forceFileSuggestions` / `shouldTriggerFileCompletion` so components can request hints explicitly.
+
+## Differential Rendering
+
+TauTUI mirrors pi-tui’s renderer:
+
+1. **First render** – emit all lines inside `CSI ?2026 h ... l` with no clears.
+2. **Resize / change above viewport** – `CSI 3J`, `CSI 2J`, full redraw.
+3. **Diff** – compute first/last changed lines, move cursor, clear to end, rewrite modified lines only.
+
+`VisibleWidth.measure` strips ANSI and normalizes tabs (3 spaces) so layout matches the TypeScript implementation.
+
+## Terminal Interface
+
+```swift
+public protocol Terminal: AnyObject {
+    func start(onInput: @escaping (TerminalInput) -> Void, onResize: @escaping () -> Void) throws
+    func stop()
+    func write(_ data: String)
+    var columns: Int { get }
+    var rows: Int { get }
+    func moveBy(lines: Int)
+    func hideCursor()
+    func showCursor()
+    func clearLine()
+    func clearFromCursor()
+    func clearScreen()
+}
+```
+
+- `ProcessTerminal` puts stdin in raw mode, normalizes modifier encodings (CSI params, ESC-prefix meta), turns bracketed paste on/off, and emits `TerminalInput` events (`.key`, `.raw`, `.paste`).
+- `VirtualTerminal` records writes for tests, tracks viewport/scrollback, and exposes helper methods (`flush()`, `getViewport()`, `getScrollBuffer()`, `getCursorPosition()`).
+
+## Examples
+
+- `swift run ChatDemo` – Swift rewrite of `test/chat-simple.ts`: Markdown chat messages, autocomplete for `/clear` + `/delete`, loader spinner.
+- `swift run KeyTester` – Swift version of `test/key-tester.ts`: logs raw hex/codes for every key and paste event.
+
+## Development
+
+```bash
+swift build
+swift test
+swift run ChatDemo
+swift run KeyTester
+```
+
+TauTUI stays aligned with pi-tui—bug fixes or new components in the TypeScript project are mirrored here using Swift conventions. Contributions are welcome; see `docs/spec.md` for the tracking plan.
 
 ## Credits
-Huge thanks to Mario Zechner and the pi-tui contributors—the architecture, rendering strategy, and component APIs originate from their work. See `docs/spec.md` for the full migration plan and roadmap.
+
+All credit for the design goes to Mario Zechner and the pi-tui contributors. TauTUI simply brings the same experience to Swift with a native API surface.
