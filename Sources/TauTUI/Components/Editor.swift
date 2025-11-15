@@ -137,21 +137,17 @@ public final class Editor: Component {
             return
         }
         for scalar in buffer {
-            self.handleScalar(scalar)
-        }
-    }
-
-    private func handleScalar(_ scalar: Character) {
-        switch scalar {
-        case "\u{0003}": // Ctrl+C
-            return
-        case "\r":
-            if self.disableSubmit { return }
-            self.submit()
-        case "\n":
-            self.insertNewLine()
-        default:
-            self.insertCharacter(String(scalar))
+            switch scalar {
+            case "\u{0003}":
+                return
+            case "\r":
+                if self.disableSubmit { return }
+                self.submit()
+            case "\n":
+                self.insertNewLine()
+            default:
+                break
+            }
         }
     }
 

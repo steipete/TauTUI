@@ -8,6 +8,12 @@ private struct TestCommand: SlashCommand {
     func argumentCompletions(prefix: String) -> [AutocompleteItem] { [] }
 }
 
+private func type(_ text: String, into editor: Editor) {
+    text.forEach { char in
+        editor.handle(input: .key(.character(char)))
+    }
+}
+
 private final class StubAutocompleteProvider: AutocompleteProvider {
     var suggestion: AutocompleteSuggestion?
     var triggerFileCompletion = true
@@ -54,7 +60,7 @@ struct EditorTests {
         let editor = Editor()
         var submitted: String?
         editor.onSubmit = { submitted = $0 }
-        editor.handle(input: .raw("hello"))
+        type("hello", into: editor)
         editor.handle(input: .key(.enter))
         #expect(submitted == "hello")
         #expect(editor.getText().isEmpty)
@@ -63,8 +69,8 @@ struct EditorTests {
     @Test
     func newlineCreatesSecondLine() async throws {
         let editor = Editor()
-        editor.handle(input: .raw("hello"))
-        editor.handle(input: .raw("\nworld"))
+        type("hello", into: editor)
+        type("\nworld", into: editor)
         #expect(editor.getText() == "hello\nworld")
     }
 
@@ -169,7 +175,7 @@ struct EditorTests {
         let editor = Editor()
         editor.setAutocompleteProvider(provider)
 
-        editor.handle(input: .raw("hel"))
+        type("hel", into: editor)
         editor.handle(input: .key(.tab)) // show suggestions
         editor.handle(input: .key(.tab)) // accept first item
 
@@ -182,7 +188,7 @@ struct EditorTests {
         let editor = Editor()
         editor.setAutocompleteProvider(provider)
 
-        editor.handle(input: .raw("/cl"))
+        type("/cl", into: editor)
         editor.handle(input: .key(.tab))
         editor.handle(input: .key(.tab))
 
@@ -204,7 +210,7 @@ struct EditorTests {
         let editor = Editor()
         editor.setAutocompleteProvider(provider)
 
-        editor.handle(input: .raw("/cl"))
+        type("/cl", into: editor)
         provider.suggestion = AutocompleteSuggestion(
             items: [AutocompleteItem(value: "clear", label: "clear", description: nil)],
             prefix: "/cl")
@@ -223,7 +229,7 @@ struct EditorTests {
         let editor = Editor()
         editor.setAutocompleteProvider(provider)
 
-        editor.handle(input: .raw("hello"))
+        type("hello", into: editor)
         let before = editor.render(width: 20)
         editor.handle(input: .key(.tab))
         let after = editor.render(width: 20)
@@ -235,10 +241,10 @@ struct EditorTests {
         let editor = Editor()
         editor.setText("hi")
         editor.handle(input: .key(.arrowLeft))
-        editor.handle(input: .raw("X"))
+        type("X", into: editor)
         #expect(editor.getText() == "hXi")
         editor.handle(input: .key(.arrowRight))
-        editor.handle(input: .raw("!"))
+        type("!", into: editor)
         #expect(editor.getText() == "hXi!")
     }
 
@@ -247,10 +253,10 @@ struct EditorTests {
         let editor = Editor()
         editor.setText("foo\nbar")
         editor.handle(input: .key(.arrowUp))
-        editor.handle(input: .raw("*"))
+        type("*", into: editor)
         #expect(editor.getText().starts(with: "foo*"))
         editor.handle(input: .key(.arrowDown))
-        editor.handle(input: .raw("!"))
+        type("!", into: editor)
         #expect(editor.getText().hasSuffix("bar!"))
     }
 
@@ -259,10 +265,10 @@ struct EditorTests {
         let editor = Editor()
         editor.setText("hello")
         editor.handle(input: .key(.home))
-        editor.handle(input: .raw("X"))
+        type("X", into: editor)
         #expect(editor.getText() == "Xhello")
         editor.handle(input: .key(.end))
-        editor.handle(input: .raw("!"))
+        type("!", into: editor)
         #expect(editor.getText() == "Xhello!")
     }
 
