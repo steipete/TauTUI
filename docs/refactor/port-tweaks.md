@@ -26,12 +26,10 @@ These tweaks are low-to-medium effort improvements identified during the port. T
 - Add snapshot-like tests for tables (ANSI stripped) mirroring upstream cases.
 **Benefit:** Higher parity; safer future merges when pi-tui changes table logic.
 
-## 5) Snapshot Tests for Renderer (Medium)
-**Problem:** Differential renderer isn’t guarded by golden outputs.
-**Plan:**
-- Use `VirtualTerminal` to capture buffers for first render, width change, and delta updates; store as fixtures.
-- Add a few markdown/select-list/text snapshots to catch regressions.
-**Benefit:** Confident refactors in renderer and components.
+## 5) Snapshot Tests for Renderer (Done — basic coverage)
+**Problem:** Differential renderer wasn’t guarded by golden outputs.
+**Action:** Added `TUIRenderingTests` for first render, resize (full clear + sync), and partial diff (`VirtualTerminal` logs). Serves as smoke snapshots for core renderer paths.
+**Next:** Consider file-backed fixtures for broader component coverage (markdown/select-list) if renderer churn increases.
 
 ## 6) Sendable Hygiene for Demos (Low)
 **Problem:** ChatDemo needed identity lookup to avoid warnings when capturing non-Sendable UI objects.
