@@ -145,7 +145,7 @@ editor.onSubmit = { print("Submitted", $0) }
 editor.setAutocompleteProvider(CombinedAutocompleteProvider(commands: [DemoCommand()]))
 ```
 
-Key bindings include Enter/Shift+Enter, Ctrl+K/U/W/A/E, Option word motion, Tab for autocomplete, Escape to cancel, etc.
+Key bindings include Enter for submit, Shift/Ctrl/Alt+Enter for newlines (Alt is the most reliable across terminals), Ctrl+K/U/W/A/E, Option word motion, Tab for autocomplete, Escape to cancel, etc.
 
 ### SelectList
 

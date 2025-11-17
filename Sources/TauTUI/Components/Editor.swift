@@ -329,8 +329,9 @@ public final class Editor: Component {
                 partial.append(char)
                 return
             }
-            guard let scalar = char.unicodeScalars.first else { return }
-            if scalar.value >= 32, scalar.value <= 126 {
+            // Keep any printable Unicode character; drop control chars (< 0x20).
+            let hasControl = char.unicodeScalars.contains { $0.value < 32 }
+            if !hasControl {
                 partial.append(char)
             }
         }
@@ -349,7 +350,7 @@ public final class Editor: Component {
             return
         }
         if lines.count == 1 {
-            for char in normalized {
+            for char in sanitized {
                 self.insertCharacter(String(char))
             }
             return

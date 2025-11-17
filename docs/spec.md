@@ -109,7 +109,7 @@ public protocol Terminal: AnyObject {
   - `PasteManager`: tracks bracketed paste state, large paste markers (`[paste #N +xx lines]`), Map from ID → content for substitution on submit.
   - `AutocompleteController`: wraps `AutocompleteProvider`, handles Tab triggers, slash command detection, forced file completion, `SelectList` overlay.
 - Rendering: draw horizontal lines (chalk gray equivalent) above/below; show fake cursor via reverse video; append autocomplete list when active (reusing `SelectList` rendering output).
-- Input pipeline replicates pi-tui order: bracketed paste start/end, autocomplete keys, Tab logic, control shortcuts (Ctrl+A/E/K/U/W, Option+Backspace, Shift+Enter combos), newline vs submit decision, backspace/delete/arrow keys, printable ASCII insertion.
+- Input pipeline replicates pi-tui order: bracketed paste start/end, autocomplete keys, Tab logic, control shortcuts (Ctrl+A/E/K/U/W, Option+Backspace, Shift+Enter combos), newline vs submit decision, backspace/delete/arrow keys, printable Unicode insertion (charCode ≥ 0x20).
 - Public API:
   ```swift
   final class Editor: Component {
