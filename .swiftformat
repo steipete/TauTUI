@@ -22,6 +22,7 @@
 --nospaceoperators ...,..<
 --ranges no-space
 --someAny true
+--voidtype void
 
 # Wrapping
 --wraparguments before-first
