@@ -11,6 +11,7 @@ enum Scenario: String {
     case editor
     case select
     case markdown
+    case markdownTable
 }
 
 func parseArgs() -> CLIConfig? {
@@ -40,7 +41,7 @@ func parseArgs() -> CLIConfig? {
 }
 
 guard let config = parseArgs() else {
-    print("Usage: TTYSampler --script <path> [--scenario editor|select|markdown] [--output <path>]")
+    print("Usage: TTYSampler --script <path> [--scenario editor|select|markdown|markdownTable] [--output <path>]")
     exit(1)
 }
 
@@ -71,6 +72,16 @@ let result = try replayTTY(script: script) { vt in
         # TauTUI Sampler
         - Supports **bold**, _italic_, and `code`.
         - Resize + theme events show wrapping + palette.
+        """.trimmingCharacters(in: .whitespacesAndNewlines))
+        tui.addChild(md)
+        return tui
+    case .markdownTable:
+        let tui = TUI(terminal: vt)
+        let md = MarkdownComponent(text: """
+        | Col A | Col B |
+        | ----- | ----- |
+        | Long cell value that wraps | Short |
+        | αβγδεζηθ | 😃 emoji cell |
         """.trimmingCharacters(in: .whitespacesAndNewlines))
         tui.addChild(md)
         return tui

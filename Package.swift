@@ -60,6 +60,8 @@ let package = Package(
             resources: [
                 .copy("sample.json"),
                 .copy("select.json"),
+                .copy("markdown.json"),
+                .copy("markdown-table.json"),
             ]),
         .testTarget(
             name: "TauTUITests",

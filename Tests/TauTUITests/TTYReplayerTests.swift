@@ -1,8 +1,30 @@
+import Foundation
 import Testing
 @testable import TauTUI
 
 @Suite("TTY replayer")
 struct TTYReplayerTests {
+    private func repoRoot() -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // TauTUITests
+            .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // repo root
+    }
+
+    private func loadScript(_ name: String) throws -> TTYScript {
+        let url = self.repoRoot()
+            .appendingPathComponent("Examples/TTYSampler/\(name).json")
+        let data = try Data(contentsOf: url)
+        return try JSONDecoder().decode(TTYScript.self, from: data)
+    }
+
+    private func loadSnapshot(_ name: String) throws -> [String] {
+        let url = self.repoRoot()
+            .appendingPathComponent("Tests/Fixtures/TTY/\(name).snapshot")
+        let contents = try String(contentsOf: url, encoding: .utf8)
+        return contents.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    }
+
     @Test
     func replaysEditorScript() async throws {
         let script = TTYScript(
@@ -28,6 +50,71 @@ struct TTYReplayerTests {
         let log = result.outputLog.joined(separator: "")
         #expect(log.contains("Hi"))
         #expect(log.contains("there"))
+    }
+
+    @Test
+    func selectSnapshotMatchesGolden() async throws {
+        let script = try self.loadScript("select")
+        let expected = try self.loadSnapshot("select")
+
+        let result = try await MainActor.run {
+            try replayTTY(script: script) { vt in
+                let tui = TUI(terminal: vt)
+                let list = SelectList(items: [
+                    SelectItem(value: "clear", label: "Clear", description: "Remove messages"),
+                    SelectItem(value: "delete", label: "Delete", description: "Delete last item"),
+                    SelectItem(value: "theme", label: "Toggle Theme", description: "Flip between dark/light"),
+                ])
+                tui.addChild(list)
+                tui.setFocus(list)
+                return tui
+            }
+        }
+
+        #expect(result.snapshot == expected)
+    }
+
+    @Test
+    func markdownSnapshotMatchesGolden() async throws {
+        let script = try self.loadScript("markdown")
+        let expected = try self.loadSnapshot("markdown")
+
+        let result = try await MainActor.run {
+            try replayTTY(script: script) { vt in
+                let tui = TUI(terminal: vt)
+                let md = MarkdownComponent(text: """
+                # TauTUI Sampler
+                - Supports **bold**, _italic_, and `code`.
+                - Resize + theme events show wrapping + palette.
+                """.trimmingCharacters(in: .whitespacesAndNewlines))
+                tui.addChild(md)
+                return tui
+            }
+        }
+
+        #expect(result.snapshot == expected)
+    }
+
+    @Test
+    func markdownTableSnapshotMatchesGolden() async throws {
+        let script = try self.loadScript("markdown-table")
+        let expected = try self.loadSnapshot("markdown-table")
+
+        let result = try await MainActor.run {
+            try replayTTY(script: script) { vt in
+                let tui = TUI(terminal: vt)
+                let md = MarkdownComponent(text: """
+                | Col A | Col B |
+                | ----- | ----- |
+                | Long cell value that wraps | Short |
+                | αβγδεζηθ | 😃 emoji cell |
+                """.trimmingCharacters(in: .whitespacesAndNewlines))
+                tui.addChild(md)
+                return tui
+            }
+        }
+
+        #expect(result.snapshot == expected)
     }
 
     @Test

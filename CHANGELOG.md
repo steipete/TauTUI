@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2025-11-21
+- Added golden snapshots for TTYSampler scenarios (select, markdown, markdown tables) under `Tests/Fixtures/TTY`, with tests that replay scripts for visual regressions.
+- TTYSampler gains `markdownTable` scenario and bundled scripts (`markdown.json`, `markdown-table.json`) for wrapping/table coverage.
+
 ## [0.1.3] - 2025-11-21
 - Extend TTY replayer: `theme` events, space key token, and deterministic `renderNow` driven resize coverage; new tests cover theme flips and editor resize handling.
 - TTYSampler CLI gains `select` and `markdown` scenarios plus bundled `select.json`; sample script now toggles dark theme.

@@ -1,0 +1,8 @@
+{
+  "columns": 36,
+  "rows": 12,
+  "events": [
+    { "type": "theme", "data": "dark" },
+    { "type": "resize", "columns": 24, "rows": 12 }
+  ]
+}

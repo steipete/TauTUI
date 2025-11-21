@@ -56,6 +56,10 @@ Scenarios:
 Bundled scripts (used by `swift run TTYSampler --script Examples/TTYSampler/<file>`):
 - `sample.json` – editor typing + paste, resize, and dark theme toggle.
 - `select.json` – SelectList navigation with resize + theme flip.
+- `markdown.json` – Markdown block with theme flip then tight width to exercise wrapping.
+- `markdown-table.json` – Markdown table with wide-cell wrapping and emoji.
+
+Golden snapshots: the rendered output of `select`, `markdown`, and `markdown-table` lives in `Tests/Fixtures/TTY/*.snapshot` and is asserted in `TTYReplayerTests` to catch regressions.
 
 ## API usage in tests
 ```swift

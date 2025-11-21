@@ -1,0 +1,8 @@
+{
+  "columns": 32,
+  "rows": 10,
+  "events": [
+    { "type": "theme", "data": "light" },
+    { "type": "resize", "columns": 24, "rows": 10 }
+  ]
+}
