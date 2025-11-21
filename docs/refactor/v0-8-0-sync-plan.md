@@ -16,6 +16,7 @@ Progress (2025-11-21)
 - ✅ TruncatedText added with padding-to-width and reset-before-ellipsis semantics; wrapping/background tests ported and expanded.
 - ✅ Input now buffers bracketed paste markers and strips newlines on paste; new tests cover both `.raw` and `.paste`.
 - ✅ Added `ThemePalette` + `apply(theme:)` propagation on `TUI` and components; test covers propagation.
+- ✅ TTY replayer/sampler added to stress editor/select/markdown flows with scripted resize + theme flips; parity tests use the harness.
 - Pending: optional global theme propagation API (decision needed), doc polish beyond porting notes.
 Work items (ordered execution)
 1) **Theme surface + defaults**

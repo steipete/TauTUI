@@ -2,6 +2,8 @@
 
 Context: upstream `pi-mono` checkout lives at `../../pi-mono` (`/Users/steipete/Projects/pi-mono`) relative to this repo. Prior sync covered commits through `ed53fce` (v0.7.13) dated 2025-11-16. Current head inspected: `origin/main` at `45ffe0a` (tags v0.8.0/v0.8.1/v0.8.2) as of **2025-11-21**.
 
+TauTUI sync helpers: use `Examples/TTYSampler` + `Sources/TauTUI/Utilities/TTYReplayer.swift` for replayable scripts that compare Swift rendering to upstream snapshots (handy for resizes, theme flips, and editor interaction). Sample scripts live beside the sampler (`sample.json`, `select.json`).
+
 ## Commits (newest → oldest)
 - **2025-11-21 — 45ffe0a — Release v0.8.0 (tags v0.8.0–v0.8.2):** rolls out theming across TUI components (themes for Editor, Markdown, SelectList, Loader, Text), new `invalidate()` hook on components/Container, truncation fixes, SelectList selection change callback, autocomplete styling via themes, background coloring via functions, and expansive tests (wrap, truncated text, markdown/theme fixtures).
 - **2025-11-20 — 4c12daf — WIP: Add theming system with /theme command:** introduces `MarkdownTheme` interfaces and exports to prepare Markdown for theme injection (superseded/refined by v0.8.0).
