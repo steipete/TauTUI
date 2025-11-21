@@ -7,6 +7,7 @@ final class ChatViewModel {
     let messages = Container()
     let editor = Editor()
     let autocomplete: CombinedAutocompleteProvider
+    private var isDark = true
 
     init() {
         let terminal = ProcessTerminal()
@@ -20,6 +21,7 @@ final class ChatViewModel {
             ],
             basePath: FileManager.default.currentDirectoryPath)
         self.editor.setAutocompleteProvider(self.autocomplete)
+        self.applyCurrentTheme()
     }
 
     // Helper to avoid capturing non-Sendable UI state inside escaping closures.
@@ -57,6 +59,10 @@ struct ChatDemo {
                 vm.tui.requestRender()
                 return
             }
+            if trimmed == "/theme" {
+                vm.toggleTheme()
+                return
+            }
             let userMessage = MarkdownComponent(text: trimmed, padding: .init(horizontal: 1, vertical: 0))
             vm.messages.addChild(userMessage)
 
@@ -87,6 +93,18 @@ struct ChatDemo {
             }
             exit(1)
         }
+    }
+}
+
+extension ChatViewModel {
+    func toggleTheme() {
+        self.isDark.toggle()
+        self.applyCurrentTheme()
+    }
+
+    private func applyCurrentTheme() {
+        let palette = self.isDark ? ThemePalette.dark() : ThemePalette.light()
+        self.tui.apply(theme: palette)
     }
 }
 

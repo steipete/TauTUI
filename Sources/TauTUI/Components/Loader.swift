@@ -1,6 +1,20 @@
 import Dispatch
 
 public final class Loader: Component {
+    public struct LoaderTheme: Sendable {
+        public var spinner: AnsiStyling.Style
+        public var message: AnsiStyling.Style
+
+        public init(spinner: @escaping AnsiStyling.Style, message: @escaping AnsiStyling.Style) {
+            self.spinner = spinner
+            self.message = message
+        }
+
+        public static let `default` = LoaderTheme(
+            spinner: AnsiStyling.color(36),
+            message: { AnsiStyling.dim($0) }
+        )
+    }
     private enum RenderTarget {
         // Custom render notifier lets tests drive the loader without a TUI.
         case closure(() -> Void)
@@ -25,6 +39,7 @@ public final class Loader: Component {
     private static let frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     private let renderTarget: RenderTarget
+    private var theme: LoaderTheme
     private var frameIndex = 0
     // Timer runs on the main queue; frames are cheap so main-queue delivery is fine.
     private var timer: DispatchSourceTimer?
@@ -34,16 +49,18 @@ public final class Loader: Component {
         didSet { self.updateText() }
     }
 
-    public init(tui: TUI, message: String = "Loading...", autoStart: Bool = true) {
+    public init(tui: TUI, message: String = "Loading...", autoStart: Bool = true, theme: LoaderTheme = .default) {
         self.renderTarget = .tui(RenderCallback(tui: tui))
         self.message = message
+        self.theme = theme
         self.updateText()
         if autoStart { self.start() }
     }
 
-    public init(message: String = "Loading...", autoStart: Bool = true, renderNotifier: @escaping () -> Void) {
+    public init(message: String = "Loading...", autoStart: Bool = true, theme: LoaderTheme = .default, renderNotifier: @escaping () -> Void) {
         self.renderTarget = .closure(renderNotifier)
         self.message = message
+        self.theme = theme
         self.updateText()
         if autoStart { self.start() }
     }
@@ -93,6 +110,15 @@ public final class Loader: Component {
 
     private func updateText() {
         let frame = Loader.frames[self.frameIndex]
-        self.textComponent.text = "\(frame) \(self.message)"
+        self.textComponent.text = "\(self.theme.spinner(frame)) \(self.theme.message(self.message))"
+    }
+
+    public func invalidate() {
+        self.textComponent.invalidate()
+    }
+
+    @MainActor public func apply(theme: ThemePalette) {
+        self.theme = theme.loader
+        self.textComponent.invalidate()
     }
 }

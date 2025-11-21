@@ -22,7 +22,7 @@ TauTUI is a Swift 6 port of [@mariozechner/pi-tui](https://github.com/badlogic/
 - **Differential Rendering** – Three rendering strategies (first frame, resize/full clear, partial diff) wrapped in CSI 2026 synchronized output for flicker‑free updates.
 - **Bracketed Paste Mode** – Handles large pastes via `[paste #n ...]` markers and replaces them on submit, just like pi-tui.
 - **Component-based API** – `Component` protocol with `render(width:)` / `handle(input:)`, plus `Container` for composition.
-- **Built-in Components** – `Text`, `MarkdownComponent`, `Input`, `Editor`, `SelectList`, `Loader`, `Spacer`.
+- **Built-in Components** – `Text`, `MarkdownComponent`, `Input`, `Editor`, `SelectList`, `Loader`, `Spacer`, `TruncatedText`.
 - **Autocomplete** – Slash-command + filesystem completion via `CombinedAutocompleteProvider`, including `@` attachment filtering.
 - **Terminal Implementations** – `ProcessTerminal` (raw mode, modifier-aware key parsing) and `VirtualTerminal` (test harness).
 
@@ -118,8 +118,10 @@ Word-wrapped text with optional RGB background and padding, cached per width.
 let md = MarkdownComponent(
     text: "# Heading", 
     padding: .init(horizontal: 1, vertical: 1),
-    background: Text.Background(red: 52, green: 53, blue: 65),
-    foreground: .init(red: 230, green: 230, blue: 230))
+    theme: .default,
+    defaultTextStyle: .init(
+        color: AnsiStyling.rgb(230, 230, 230),
+        background: .rgb(52, 53, 65)))
 ```
 
 Renders headings, lists, tables, blockquotes, and fenced code via `swift-markdown`, with RGB background + foreground tints.
@@ -160,9 +162,32 @@ list.onCancel = { print("cancel") }
 
 Scrollable list with arrow navigation, Enter selection, Escape cancel.
 
+### TruncatedText
+
+```swift
+let truncated = TruncatedText(text: "A very long title that will be trimmed…", paddingX: 1)
+```
+
+Renders only the first line, truncates with a reset + ellipsis, and pads to the viewport width.
+
 ### Loader & Spacer
 
 `Loader` renders the Braille spinner and notifies its `TUI`/closure every tick; `Spacer` inserts empty lines for layout.
+
+## Theming
+
+Theme-aware components accept injected themes; defaults keep the classic look. To change colors globally:
+
+```swift
+var palette = ThemePalette.dark()
+palette.editor = .init(borderColor: AnsiStyling.color(36), selectList: .default)
+palette.markdown = .default // customize fields as needed
+palette.textBackground = .init(red: 24, green: 26, blue: 32)
+
+tui.apply(theme: palette)   // pushes themes to children and re-renders
+```
+
+You can still pass per-instance themes when constructing components; `apply(theme:)` refreshes any theme-aware component already on screen.
 
 ## Autocomplete
 

@@ -4,6 +4,8 @@ These are the key decisions, learnings, and a playbook for keeping TauTUI in syn
 
 ## Overview
 - **Goal:** Swift 6+ port with idiomatic APIs, strong isolation defaults, and testability while preserving pi-tui features (differential rendering, bracketed paste, autocomplete, markdown, editor, loader, input, select list).
+- **Theming:** TauTUI mirrors upstream v0.8.0 theming via `EditorTheme`, `SelectListTheme`, `MarkdownTheme`, `LoaderTheme`, and `Text.Background`; defaults keep legacy colors while allowing dynamic updates (call `invalidate()` when swapping).
+- **Global theme swaps:** Use `TUI.apply(theme:)` with `ThemePalette` to push themes to theme-aware components; defaults match previous styling so existing apps remain unchanged until they opt in.
 - **Status:** Core runtime, components, autocomplete, loader, editor, tests, and a ChatDemo example are implemented. Editor/keybindings are close but not 1:1 yet; this doc helps future syncs.
 
 ## Porting Principles We Used

@@ -8,6 +8,7 @@ TauTUI is an idiomatic Swift 6 reimplementation of [@mariozechner/pi-tui](https:
 - **Swift idioms**: use value types, enums, option sets, `@Sendable` closures, and type-safe colors/keys rather than stringly APIs.
 - **Isolation for testability**: small files, focused types, protocol-based seams, and a VirtualTerminal harness allow exhaustive Swift Test coverage.
 - **Zero flicker**: keep the three rendering strategies from pi-tui, always wrapping writes with CSI 2026 synchronized output.
+- **Theming:** Components accept theme structs (Editor/SelectList/Markdown/Text/Loader) with ANSI-style closures; defaults preserve current colors. Theme changes should call `invalidate()` to flush caches.
 - **Credits & licensing**: README and docs must thank Mario Zechner and link to pi-tui; major algorithmic ports should call this out in comments where appropriate.
 
 ## 3. Targets & Module Layout
@@ -45,6 +46,7 @@ No Windows support is planned; Package.swift and README must state this explicit
 - CSI 2026 synchronized output around every flush
 - Terminal abstraction with raw-mode, bracketed paste, resize notifications
 - Components: Text, Markdown, Input, Editor, SelectList, Loader, Spacer, Container
+- Rendering helpers: ANSI-aware wrapping (`AnsiWrapping.wrapText`) + safe background padding (`applyBackgroundToLine`) replace ad-hoc line splits.
 - Combined autocomplete (slash commands + filesystem + `@` attachments)
 - Editor behaviors: autocomplete overlay, bracketed paste markers, large paste substitution, slash command shortcuts, complex key handling, fake cursor rendering
 - Utilities: visible width, ANSI-safe wrapping, MIME filters

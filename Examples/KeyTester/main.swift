@@ -92,6 +92,7 @@ struct KeyTester {
     static func main() {
         let terminal = ProcessTerminal()
         let tui = TUI(terminal: terminal)
+        tui.apply(theme: ThemePalette.light())
         let logger = KeyLogger(requestRender: { @MainActor in
             tui.requestRender()
         })

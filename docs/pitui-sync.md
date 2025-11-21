@@ -1,3 +1,35 @@
+# pi-tui sync log (Nov 18–21, 2025)
+
+Context: upstream `pi-mono` checkout lives at `../../pi-mono` (`/Users/steipete/Projects/pi-mono`) relative to this repo. Prior sync covered commits through `ed53fce` (v0.7.13) dated 2025-11-16. Current head inspected: `origin/main` at `45ffe0a` (tags v0.8.0/v0.8.1/v0.8.2) as of **2025-11-21**.
+
+## Commits (newest → oldest)
+- **2025-11-21 — 45ffe0a — Release v0.8.0 (tags v0.8.0–v0.8.2):** rolls out theming across TUI components (themes for Editor, Markdown, SelectList, Loader, Text), new `invalidate()` hook on components/Container, truncation fixes, SelectList selection change callback, autocomplete styling via themes, background coloring via functions, and expansive tests (wrap, truncated text, markdown/theme fixtures).
+- **2025-11-20 — 4c12daf — WIP: Add theming system with /theme command:** introduces `MarkdownTheme` interfaces and exports to prepare Markdown for theme injection (superseded/refined by v0.8.0).
+- **2025-11-20 — 17d213a — Downgrade Biome to 2.3.5:** tooling/lint change only; no runtime effect for TauTUI.
+- **2025-11-19 — aed141a / af0f67a — Thinking level visual feedback:** Editor gains a `borderColor` property (driven by thinking level), SelectList changes bubble selection change events; coding-agent renderer maps thinking levels → border colors.
+- **2025-11-18 — 5703a3b — Add ANSI-aware word wrapping:** adds shared `wrapTextWithAnsi` utility (tracks ANSI codes, surrogate pairs, word wrapping) and refactors Text/Markdown to use it; background fill helper revamped.
+- **2025-11-18 — 117f0db — feat(coding-agent): add OAuth + bracketed paste in Input:** Input component buffers bracketed paste markers (`\x1b[200~` / `\x1b[201~`) and strips newlines when inserting; rest of commit is coding-agent OAuth plumbing.
+- **2025-11-17–20 — v0.7.15 → v0.7.29 tags:** package.json bumps and changelog credits only; no TUI logic changes.
+
+## Porting impact for TauTUI
+- **Themeable components (breaking):** Editor now requires an `EditorTheme` (border color + SelectList theme); SelectList renders through injected colors and exposes `onSelectionChange`; Markdown requires a `MarkdownTheme` and now styles bold/italic/links via theme functions; Text/Loader accept background/color functions instead of raw RGB; TruncatedText pads lines fully. Add Swift equivalents and sensible default themes matching current colors.
+- **Invalidate lifecycle:** new `invalidate()` on `Component` and `Container` cascades. Update `Component` protocol in Swift, implement no-op/default overrides, and call when themes/settings change.
+- **Theme propagation:** `ThemePalette` + `apply(theme:)` live on `TUI` and theme-aware components to make global theme swaps easy.
+- **ANSI-aware wrapping:** shared `wrapTextWithAnsi` handles ANSI codes, surrogate pairs, and word boundaries. Port to Swift utility (likely `VisibleWidth` helper) and use in Markdown/Text (and any other wrappers) to avoid color loss or mis-wrapping.
+- **Truncation semantics:** TruncatedText now stops at first newline, truncates with reset + ellipsis, and pads every line (including vertical padding) to width. Align Swift’s `TruncatedText` (or equivalent) behavior and add tests.
+- **Input bracketed paste:** Upstream Input buffers `[200~`/`[201~` and strips newlines on paste insert. Our pipeline already surfaces `.paste` events via `Terminal`, but verify `Components/Input` mirrors the buffer/cleaning behavior for parity.
+- **Thinking-level border color:** Editor exposes `borderColor` to allow dynamic status coloring (used by coding-agent). Ensure Swift editor can accept a border color function and hook it to any thinking-level UI we provide.
+- **Tests to mirror:** add Swift test coverage for ANSI-aware wrapping, background application, truncated text padding/truncation, Markdown theme rendering, and Input bracketed paste handling.
+
+## Plan to migrate into TauTUI (Swift)
+1) **Theme surface:** define Swift theme structs for Editor, SelectList, Markdown, Loader, Text; thread them through initializers and defaults so existing demos keep current colors. Add SelectList selection-change callback. ✅
+2) **Component lifecycle:** extend `Component` protocol with `invalidate()` (default no-op) and propagate through `TUI.Container`; ensure theme switches call invalidate on children. ✅
+3) **Wrapping utility:** implement ANSI-aware word wrap helper (preserving SGR state, surrogate pairs) and replace ad-hoc wrapping in Markdown/Text with it; keep using `VisibleWidth` for width math. ✅
+4) **Background/truncation updates:** switch background fill helpers to accept color functions; update TruncatedText to first-line-only, reset-before-ellipsis, and fixed-width padding; port new tests. ✅
+5) **Editor/Input parity:** add border color injection + SelectList theming in Editor; audit autocomplete creation; confirm Input handles bracketed paste/newline stripping even when delivered as raw input. ✅
+6) **Docs:** keep spec/porting docs aligned with theme + wrapping changes; note upstream path (`../../pi-mono`) here for future syncs. ✅
+7) **Demos:** ChatDemo `/theme` toggle wired to ThemePalette presets; KeyTester starts with light theme. ✅
+
 # pi-tui sync log (Nov 15–17, 2025)
 
 Context: track upstream changes in `packages/tui` from `pi-mono` since **2025-11-15** (last pre-window commit: `1afe40e` / v0.7.10). Current head inspected: `origin/main` as of **2025-11-17**.

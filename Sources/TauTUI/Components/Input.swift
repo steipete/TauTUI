@@ -5,6 +5,8 @@ public final class Input: Component {
     }
 
     private var cursor: Int
+    private var pasteBuffer: String = ""
+    private var isInPaste = false
     public var onSubmit: ((String) -> Void)?
 
     public init(value: String = "") {
@@ -45,10 +47,36 @@ public final class Input: Component {
         case let .key(key, modifiers):
             self.handleKey(key, modifiers: modifiers)
         case let .paste(text):
-            self.insert(text)
+            self.insert(self.cleanedPaste(text))
         case let .raw(data):
-            data.forEach { self.insert(String($0)) }
+            self.handleRaw(data)
         }
+    }
+
+    private func handleRaw(_ data: String) {
+        var buffer = data
+
+        if buffer.contains("\u{001B}[200~") {
+            self.isInPaste = true
+            buffer = buffer.replacingOccurrences(of: "\u{001B}[200~", with: "")
+        }
+
+        if self.isInPaste {
+            self.pasteBuffer += buffer
+            if let endRange = self.pasteBuffer.range(of: "\u{001B}[201~") {
+                let beforeEnd = String(self.pasteBuffer[..<endRange.lowerBound])
+                self.insert(self.cleanedPaste(beforeEnd))
+                let trailing = String(self.pasteBuffer[endRange.upperBound...])
+                self.pasteBuffer.removeAll(keepingCapacity: false)
+                self.isInPaste = false
+                if !trailing.isEmpty {
+                    self.handleRaw(trailing)
+                }
+            }
+            return
+        }
+
+        buffer.forEach { self.insert(String($0)) }
     }
 
     private func handleKey(_ key: TerminalKey, modifiers: KeyModifiers) {
@@ -86,6 +114,12 @@ public final class Input: Component {
         self.cursor += string.count
     }
 
+    private func cleanedPaste(_ text: String) -> String {
+        text.replacingOccurrences(of: "\r\n", with: "")
+            .replacingOccurrences(of: "\n", with: "")
+            .replacingOccurrences(of: "\r", with: "")
+    }
+
     private func windowedValue(available: Int) -> (String, Int) {
         if self.value.count <= available {
             return (self.value, self.cursor)
@@ -100,5 +134,9 @@ public final class Input: Component {
         let visible = String(value[start..<end])
         let cursorDisplay = cursorAtEnd ? visible.count : self.cursor - startIndex
         return (visible, cursorDisplay)
+    }
+
+    @MainActor public func apply(theme: ThemePalette) {
+        // Input currently has no theming knobs.
     }
 }

@@ -10,11 +10,27 @@ public protocol Component: AnyObject {
     /// Handle input when the component has focus. Components that do not care
     /// about keyboard events can adopt the default empty implementation.
     func handle(input: TerminalInput)
+
+    /// Invalidate any cached rendering state. Components that don’t cache can
+    /// rely on the default no-op implementation.
+    func invalidate()
+
+    /// Optional hook for theme updates. Components that support themes should
+    /// implement this; others can ignore.
+    @MainActor func apply(theme: ThemePalette)
 }
 
 extension Component {
     public func handle(input: TerminalInput) {
         // Default: ignore input.
+    }
+
+    public func invalidate() {
+        // Default: nothing to reset.
+    }
+
+    @MainActor public func apply(theme: ThemePalette) {
+        // Default: nothing to apply.
     }
 }
 
@@ -40,6 +56,14 @@ open class Container: Component {
 
     open func clear() {
         self.children.removeAll()
+    }
+
+    open func invalidate() {
+        self.children.forEach { $0.invalidate() }
+    }
+
+    @MainActor open func apply(theme: ThemePalette) {
+        self.children.forEach { $0.apply(theme: theme) }
     }
 
     open func render(width: Int) -> [String] {

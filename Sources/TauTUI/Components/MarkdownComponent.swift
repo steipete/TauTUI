@@ -12,26 +12,100 @@ public final class MarkdownComponent: Component {
         }
     }
 
-    public struct Foreground {
-        public var red: UInt8
-        public var green: UInt8
-        public var blue: UInt8
+    public struct DefaultTextStyle: Sendable {
+        public var color: AnsiStyling.Style?
+        public var background: AnsiStyling.Background?
+        public var bold: Bool
+        public var italic: Bool
+        public var strikethrough: Bool
+        public var underline: Bool
 
-        public init(red: UInt8, green: UInt8, blue: UInt8) {
-            self.red = red
-            self.green = green
-            self.blue = blue
+        public init(
+            color: AnsiStyling.Style? = nil,
+            background: AnsiStyling.Background? = nil,
+            bold: Bool = false,
+            italic: Bool = false,
+            strikethrough: Bool = false,
+            underline: Bool = false)
+        {
+            self.color = color
+            self.background = background
+            self.bold = bold
+            self.italic = italic
+            self.strikethrough = strikethrough
+            self.underline = underline
+        }
+    }
+
+    public struct MarkdownTheme: Sendable {
+        public var heading: AnsiStyling.Style
+        public var link: AnsiStyling.Style
+        public var linkUrl: AnsiStyling.Style
+        public var code: AnsiStyling.Style
+        public var codeBlock: AnsiStyling.Style
+        public var codeBlockBorder: AnsiStyling.Style
+        public var quote: AnsiStyling.Style
+        public var quoteBorder: AnsiStyling.Style
+        public var hr: AnsiStyling.Style
+        public var listBullet: AnsiStyling.Style
+        public var bold: AnsiStyling.Style
+        public var italic: AnsiStyling.Style
+        public var strikethrough: AnsiStyling.Style
+        public var underline: AnsiStyling.Style
+
+        public init(
+            heading: @escaping AnsiStyling.Style,
+            link: @escaping AnsiStyling.Style,
+            linkUrl: @escaping AnsiStyling.Style,
+            code: @escaping AnsiStyling.Style,
+            codeBlock: @escaping AnsiStyling.Style,
+            codeBlockBorder: @escaping AnsiStyling.Style,
+            quote: @escaping AnsiStyling.Style,
+            quoteBorder: @escaping AnsiStyling.Style,
+            hr: @escaping AnsiStyling.Style,
+            listBullet: @escaping AnsiStyling.Style,
+            bold: @escaping AnsiStyling.Style,
+            italic: @escaping AnsiStyling.Style,
+            strikethrough: @escaping AnsiStyling.Style,
+            underline: @escaping AnsiStyling.Style)
+        {
+            self.heading = heading
+            self.link = link
+            self.linkUrl = linkUrl
+            self.code = code
+            self.codeBlock = codeBlock
+            self.codeBlockBorder = codeBlockBorder
+            self.quote = quote
+            self.quoteBorder = quoteBorder
+            self.hr = hr
+            self.listBullet = listBullet
+            self.bold = bold
+            self.italic = italic
+            self.strikethrough = strikethrough
+            self.underline = underline
         }
 
-        var ansiPrefix: String {
-            "\u{001B}[38;2;\(self.red);\(self.green);\(self.blue)m"
-        }
+        public static let `default` = MarkdownTheme(
+            heading: AnsiStyling.color(36),
+            link: { AnsiStyling.color(34)(AnsiStyling.underline($0)) },
+            linkUrl: { "\u{001B}[90m\($0)\u{001B}[0m" },
+            code: AnsiStyling.color(36),
+            codeBlock: AnsiStyling.color(32),
+            codeBlockBorder: { "\u{001B}[90m\($0)\u{001B}[0m" },
+            quote: AnsiStyling.italic,
+            quoteBorder: { "\u{001B}[90m\($0)\u{001B}[0m" },
+            hr: { "\u{001B}[90m\($0)\u{001B}[0m" },
+            listBullet: AnsiStyling.color(36),
+            bold: AnsiStyling.bold,
+            italic: AnsiStyling.italic,
+            strikethrough: AnsiStyling.strikethrough,
+            underline: AnsiStyling.underline)
     }
 
     public var text: String { didSet { self.invalidateCache() } }
     public var padding: Padding { didSet { self.invalidateCache() } }
-    public var background: Text.Background? { didSet { self.invalidateCache() } }
-    public var foreground: Foreground? { didSet { self.invalidateCache() } }
+    public var defaultTextStyle: DefaultTextStyle? { didSet { self.invalidateCache() } }
+    public var theme: MarkdownTheme { didSet { self.invalidateCache() } }
 
     private var cachedWidth: Int?
     private var cachedLines: [String]?
@@ -39,13 +113,13 @@ public final class MarkdownComponent: Component {
     public init(
         text: String = "",
         padding: Padding = Padding(),
-        background: Text.Background? = nil,
-        foreground: Foreground? = nil)
+        theme: MarkdownTheme = .default,
+        defaultTextStyle: DefaultTextStyle? = nil)
     {
         self.text = text
         self.padding = padding
-        self.background = background
-        self.foreground = foreground
+        self.theme = theme
+        self.defaultTextStyle = defaultTextStyle
     }
 
     public func render(width: Int) -> [String] {
@@ -53,7 +127,7 @@ public final class MarkdownComponent: Component {
         guard width > 0 else { self.cache(width: width, lines: []); return [] }
 
         let contentWidth = max(1, width - self.padding.horizontal * 2)
-        let renderer = Renderer(maxWidth: contentWidth)
+        let renderer = Renderer(maxWidth: contentWidth, theme: self.theme)
         let document = Document(parsing: text)
         document.children.forEach { renderer.visit($0) }
 
@@ -79,15 +153,30 @@ public final class MarkdownComponent: Component {
     }
 
     private func applyColors(to line: String) -> String {
-        var prefix = ""
-        if let background {
-            prefix += background.ansiPrefix
+        guard let style = self.defaultTextStyle else { return line }
+        var styled = line
+
+        if let color = style.color {
+            styled = color(styled)
         }
-        if let foreground {
-            prefix += foreground.ansiPrefix
+        if style.bold {
+            styled = AnsiStyling.bold(styled)
         }
-        guard !prefix.isEmpty else { return line }
-        return prefix + line + "\u{001B}[0m"
+        if style.italic {
+            styled = AnsiStyling.italic(styled)
+        }
+        if style.strikethrough {
+            styled = AnsiStyling.strikethrough(styled)
+        }
+        if style.underline {
+            styled = AnsiStyling.underline(styled)
+        }
+
+        if let background = style.background {
+            styled = AnsiWrapping.applyBackgroundToLine(styled, width: VisibleWidth.measure(line), background: background)
+        }
+
+        return styled
     }
 
     private func invalidateCache() {
@@ -99,15 +188,26 @@ public final class MarkdownComponent: Component {
         self.cachedWidth = width
         self.cachedLines = lines
     }
+
+    public func invalidate() {
+        self.invalidateCache()
+    }
+
+    @MainActor public func apply(theme: ThemePalette) {
+        self.theme = theme.markdown
+        self.invalidateCache()
+    }
 }
 
 private final class Renderer {
     let maxWidth: Int
+    let theme: MarkdownComponent.MarkdownTheme
     var lines: [String] = []
     private var listDepth: Int = 0
 
-    init(maxWidth: Int) {
+    init(maxWidth: Int, theme: MarkdownComponent.MarkdownTheme) {
         self.maxWidth = max(1, maxWidth)
+        self.theme = theme
     }
 
     func visit(_ markup: Markup) {
@@ -141,13 +241,15 @@ private final class Renderer {
 
     private func renderHeading(_ heading: Heading) {
         let text = self.renderInline(heading.inlineChildren)
-        let decorated = switch heading.level {
+        let decorated: String
+        switch heading.level {
         case 1:
-            "\u{001B}[1;4;33m\(text)\u{001B}[0m"
+            decorated = self.theme.heading(self.theme.bold(self.theme.underline(text)))
         case 2:
-            "\u{001B}[1;33m\(text)\u{001B}[0m"
+            decorated = self.theme.heading(self.theme.bold(text))
         default:
-            "\u{001B}[1m\(String(repeating: "#", count: heading.level)) \(text)\u{001B}[0m"
+            let prefix = String(repeating: "#", count: heading.level) + " "
+            decorated = self.theme.heading(self.theme.bold(prefix + text))
         }
         self.wrap(line: decorated)
         self.lines.append("")
@@ -166,7 +268,7 @@ private final class Renderer {
             if let firstChild = children.first {
                 if let paragraph = firstChild as? Paragraph {
                     let inline = self.renderInline(paragraph.inlineChildren)
-                    self.wrap(line: "\u{001B}[36m\(bullet)\u{001B}[0m\(inline)")
+                    self.wrap(line: self.theme.listBullet(bullet) + inline)
                 } else {
                     self.wrap(line: bullet + firstChild.format())
                 }
@@ -181,26 +283,26 @@ private final class Renderer {
     }
 
     private func renderBlockQuote(_ quote: BlockQuote) {
-        let innerRenderer = Renderer(maxWidth: max(maxWidth - 2, 1))
+        let innerRenderer = Renderer(maxWidth: max(maxWidth - 2, 1), theme: self.theme)
         quote.children.forEach { innerRenderer.visit($0) }
         for line in innerRenderer.lines {
-            self.lines.append("\u{001B}[90m│ \u{001B}[3m\(line)\u{001B}[0m")
+            self.lines.append(self.theme.quoteBorder("│ ") + self.theme.quote(self.theme.italic(line)))
         }
         self.lines.append("")
     }
 
     private func renderCodeBlock(_ code: CodeBlock) {
-        self.lines.append("\u{001B}[90m```\(code.language ?? "")\u{001B}[0m")
+        self.lines.append(self.theme.codeBlockBorder("```\(code.language ?? "")"))
         for line in code.code.split(separator: "\n", omittingEmptySubsequences: false) {
-            self.lines.append("\u{001B}[2m  \u{001B}[0m\u{001B}[32m\(line)\u{001B}[0m")
+            self.lines.append("  " + self.theme.codeBlock(String(line)))
         }
-        self.lines.append("\u{001B}[90m```\u{001B}[0m")
+        self.lines.append(self.theme.codeBlockBorder("```"))
         self.lines.append("")
     }
 
     private func renderThematicBreak(_ breakNode: ThematicBreak) {
         let width = min(maxWidth, 80)
-        self.lines.append("\u{001B}[90m\(String(repeating: "─", count: width))\u{001B}[0m")
+        self.lines.append(self.theme.hr(String(repeating: "─", count: width)))
         self.lines.append("")
     }
 
@@ -270,14 +372,18 @@ private final class Renderer {
             case let text as Markdown.Text:
                 result += text.string
             case let strong as Strong:
-                result += "\u{001B}[1m\(self.renderInlineSequence(strong.inlineChildren))\u{001B}[0m"
+                result += self.theme.bold(self.renderInlineSequence(strong.inlineChildren))
             case let emphasis as Emphasis:
-                result += "\u{001B}[3m\(self.renderInlineSequence(emphasis.inlineChildren))\u{001B}[0m"
+                result += self.theme.italic(self.renderInlineSequence(emphasis.inlineChildren))
             case let code as InlineCode:
-                result += "\u{001B}[90m`\u{001B}[36m\(code.code)\u{001B}[90m`\u{001B}[0m"
+                result += self.theme.code(code.code)
             case let link as Link:
                 let label = self.renderInlineSequence(link.inlineChildren)
-                result += "\u{001B}[4;34m\(label)\u{001B}[90m (\(link.destination ?? ""))\u{001B}[0m"
+                if let destination = link.destination {
+                    result += self.theme.link(label) + self.theme.linkUrl(" (\(destination))")
+                } else {
+                    result += self.theme.link(label)
+                }
             case _ as SoftBreak:
                 result += " "
             case _ as LineBreak:
@@ -290,57 +396,7 @@ private final class Renderer {
     }
 
     private func wrap(line: String) {
-        for segment in line.split(separator: "\n", omittingEmptySubsequences: false) {
-            var current = ""
-            for word in segment.split(separator: " ", omittingEmptySubsequences: false) {
-                let wordString = String(word)
-                if wordString.isEmpty {
-                    current += " "
-                    continue
-                }
-                if current.isEmpty {
-                    if VisibleWidth.measure(wordString) <= self.maxWidth {
-                        current = wordString
-                    } else {
-                        self.lines.append(contentsOf: self.breakLongWord(wordString))
-                    }
-                    continue
-                }
-                let candidate = current + " " + wordString
-                if VisibleWidth.measure(candidate) <= self.maxWidth {
-                    current = candidate
-                } else {
-                    self.lines.append(current)
-                    if VisibleWidth.measure(wordString) <= self.maxWidth {
-                        current = wordString
-                    } else {
-                        self.lines.append(contentsOf: self.breakLongWord(wordString))
-                        current = ""
-                    }
-                }
-            }
-            if !current.isEmpty { self.lines.append(current) }
-        }
-    }
-
-    private func breakLongWord(_ word: String) -> [String] {
-        var result: [String] = []
-        var current = ""
-        for char in word {
-            let candidate = current + String(char)
-            if VisibleWidth.measure(candidate) > self.maxWidth {
-                if !current.isEmpty {
-                    result.append(current)
-                    current = String(char)
-                } else {
-                    result.append(String(char))
-                    current = ""
-                }
-            } else {
-                current = candidate
-            }
-        }
-        if !current.isEmpty { result.append(current) }
-        return result
+        let wrapped = AnsiWrapping.wrapText(line, width: self.maxWidth)
+        self.lines.append(contentsOf: wrapped)
     }
 }

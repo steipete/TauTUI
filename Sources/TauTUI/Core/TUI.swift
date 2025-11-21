@@ -6,6 +6,7 @@ public final class TUI: Container {
     private let terminal: Terminal
     private let scheduleRender: (@MainActor @Sendable @escaping () -> Void) -> Void
     private var focusedComponent: Component?
+    private var theme: ThemePalette = .default
 
     private var previousLines: [String] = []
     private var previousWidth: Int = 0
@@ -37,6 +38,13 @@ public final class TUI: Container {
     public func stop() {
         self.terminal.showCursor()
         self.terminal.stop()
+    }
+
+    @MainActor public override func apply(theme: ThemePalette) {
+        self.theme = theme
+        self.children.forEach { $0.apply(theme: theme) }
+        self.invalidate()
+        self.requestRender()
     }
 
     public func requestRender() {

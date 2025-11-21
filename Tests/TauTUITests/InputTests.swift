@@ -21,4 +21,15 @@ struct InputTests {
         input.handle(input: .key(.backspace))
         #expect(input.value == "hel")
     }
+
+    @Test
+    func bracketedPasteBuffersAndStripsNewlines() async throws {
+        let input = Input()
+        input.handle(input: .raw("\u{001B}[200~hello"))
+        input.handle(input: .raw(" world\n\u{001B}[201~"))
+        #expect(input.value == "hello world")
+
+        input.handle(input: .paste("more\nlines"))
+        #expect(input.value == "hello worldmorelines")
+    }
 }

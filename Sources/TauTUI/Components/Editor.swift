@@ -4,6 +4,20 @@ public struct TextEditorConfig {
     public init() {}
 }
 
+public struct EditorTheme: Sendable {
+    public var borderColor: AnsiStyling.Style
+    public var selectList: SelectListTheme
+
+    public init(borderColor: @escaping AnsiStyling.Style, selectList: SelectListTheme) {
+        self.borderColor = borderColor
+        self.selectList = selectList
+    }
+
+    public static let `default` = EditorTheme(
+        borderColor: { "\u{001B}[90m\($0)\u{001B}[0m" },
+        selectList: .default)
+}
+
 public final class Editor: Component {
     // Pure, Sendable buffer keeps mutations testable and UI-free.
     private var buffer = EditorBuffer()
@@ -25,8 +39,11 @@ public final class Editor: Component {
     public var onSubmit: ((String) -> Void)?
     public var onChange: ((String) -> Void)?
 
-    public init(config: TextEditorConfig = TextEditorConfig()) {
+    public var theme: EditorTheme
+
+    public init(config: TextEditorConfig = TextEditorConfig(), theme: EditorTheme = .default) {
         self.config = config
+        self.theme = theme
     }
 
     public func configure(_ config: TextEditorConfig) {
@@ -38,7 +55,7 @@ public final class Editor: Component {
     }
 
     public func render(width: Int) -> [String] {
-        let horizontal = String(repeating: "─", count: width)
+        let horizontal = self.theme.borderColor(String(repeating: "─", count: width))
         var result: [String] = [horizontal]
         let layoutLines = self.layout(width: width)
         result.append(contentsOf: layoutLines)
@@ -478,7 +495,8 @@ public final class Editor: Component {
         self.autocompleteList = SelectList(
             items: suggestion.items
                 .map { SelectItem(value: $0.value, label: $0.label, description: $0.description) },
-            maxVisible: 5)
+            maxVisible: 5,
+            theme: self.theme.selectList)
         self.autocompleteList?.onSelect = { [weak self] selected in
             guard let self else { return }
             let result = provider.applyCompletion(
@@ -507,5 +525,15 @@ public final class Editor: Component {
         var copy = self.buffer
         mutate(&copy)
         return copy
+    }
+
+    public func invalidate() {
+        // Stateless renderer; nothing cached.
+    }
+
+    @MainActor public func apply(theme: ThemePalette) {
+        self.theme = theme.editor
+        // If an autocomplete list is already visible, refresh its theme.
+        self.autocompleteList?.theme = theme.selectList
     }
 }
