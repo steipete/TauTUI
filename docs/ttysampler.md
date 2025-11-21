@@ -18,17 +18,19 @@ A small harness to replay scripted terminal events against TauTUI for debugging 
     { "type": "key",    "data": "enter" },
     { "type": "paste",  "data": "pasted text" },
     { "type": "sleep",  "ms": 10 },
-    { "type": "resize", "columns": 60, "rows": 20 }
+    { "type": "resize", "columns": 60, "rows": 20 },
+    { "type": "theme",  "data": "dark" }
   ]
 }
 ```
 
 Supported event types:
-- `key`: `data` is a key token (`enter`, `tab`, `backspace`, `delete`, `left`, `right`, `up`, `down`, `home`, `end`, or a single character). Optional `modifiers`: `["shift"|"ctrl"|"alt"|"option"|"cmd"|"command"|"meta"]`.
+- `key`: `data` is a key token (`enter`, `tab`, `backspace`, `delete`, `left`, `right`, `up`, `down`, `home`, `end`, `space`, or a single character). Optional `modifiers`: `["shift"|"ctrl"|"alt"|"option"|"cmd"|"command"|"meta"]`.
 - `paste`: `data` string is inserted via `.paste` event.
 - `raw`: `data` is injected as raw input (escape sequences, etc.).
 - `resize`: `columns`/`rows` adjust viewport and trigger resize.
 - `sleep`: wait `ms` milliseconds.
+- `theme`: swap the global `ThemePalette` (`data` is `"dark"` or `"light"`).
 
 ## CLI usage
 ```bash
@@ -38,11 +40,22 @@ swift run TTYSampler --script Examples/TTYSampler/sample.json
 # Save snapshot to file
 swift run TTYSampler --script /path/to/script.json --output /tmp/snapshot.txt
 
-# Explicit scenario (currently only "editor")
+# Explicit scenario
 swift run TTYSampler --script script.json --scenario editor
+swift run TTYSampler --script script.json --scenario select
+swift run TTYSampler --script script.json --scenario markdown
 ```
 
 Output: snapshot lines printed (or saved) representing the final rendered state after replay. ANSI is preserved; pipe through `ansi2txt` if you want plain text.
+
+Scenarios:
+- `editor` – single `Editor` focused; great for typing/paste scripts and resize stress.
+- `select` – a `SelectList` with a few items to test navigation, theming, and resize padding.
+- `markdown` – renders a short Markdown block so you can flip themes and widths to inspect ANSI wrapping.
+
+Bundled scripts (used by `swift run TTYSampler --script Examples/TTYSampler/<file>`):
+- `sample.json` – editor typing + paste, resize, and dark theme toggle.
+- `select.json` – SelectList navigation with resize + theme flip.
 
 ## API usage in tests
 ```swift
@@ -78,6 +91,6 @@ let result = try await MainActor.run {
 - `Examples/TTYSampler/sample.json` is bundled with the executable target for quick smoke runs.
 
 ## Ideas / next steps
-- Add scenarios for select list and markdown rendering.
 - Optional HTML export (ansi-to-html) for visual diffs.
 - Script generator to capture real sessions and replay them.
+- Add golden snapshots for the sampler scenarios to aid visual diffing in CI.

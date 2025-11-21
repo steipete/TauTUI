@@ -9,6 +9,8 @@ struct CLIConfig {
 
 enum Scenario: String {
     case editor
+    case select
+    case markdown
 }
 
 func parseArgs() -> CLIConfig? {
@@ -38,7 +40,7 @@ func parseArgs() -> CLIConfig? {
 }
 
 guard let config = parseArgs() else {
-    print("Usage: TTYSampler --script <path> [--scenario editor] [--output <path>]")
+    print("Usage: TTYSampler --script <path> [--scenario editor|select|markdown] [--output <path>]")
     exit(1)
 }
 
@@ -52,6 +54,25 @@ let result = try replayTTY(script: script) { vt in
         let editor = Editor()
         tui.addChild(editor)
         tui.setFocus(editor)
+        return tui
+    case .select:
+        let tui = TUI(terminal: vt)
+        let list = SelectList(items: [
+            SelectItem(value: "clear", label: "Clear", description: "Remove messages"),
+            SelectItem(value: "delete", label: "Delete", description: "Delete last item"),
+            SelectItem(value: "theme", label: "Toggle Theme", description: "Flip between dark/light"),
+        ])
+        tui.addChild(list)
+        tui.setFocus(list)
+        return tui
+    case .markdown:
+        let tui = TUI(terminal: vt)
+        let md = MarkdownComponent(text: """
+        # TauTUI Sampler
+        - Supports **bold**, _italic_, and `code`.
+        - Resize + theme events show wrapping + palette.
+        """.trimmingCharacters(in: .whitespacesAndNewlines))
+        tui.addChild(md)
         return tui
     }
 }

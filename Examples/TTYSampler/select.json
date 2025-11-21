@@ -1,0 +1,13 @@
+{
+  "columns": 28,
+  "rows": 8,
+  "events": [
+    { "type": "theme", "data": "light" },
+    { "type": "key", "data": "down" },
+    { "type": "key", "data": "down" },
+    { "type": "key", "data": "up" },
+    { "type": "resize", "columns": 20, "rows": 8 },
+    { "type": "sleep", "ms": 5 },
+    { "type": "theme", "data": "dark" }
+  ]
+}

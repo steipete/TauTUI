@@ -59,6 +59,7 @@ let package = Package(
             path: "Examples/TTYSampler",
             resources: [
                 .copy("sample.json"),
+                .copy("select.json"),
             ]),
         .testTarget(
             name: "TauTUITests",

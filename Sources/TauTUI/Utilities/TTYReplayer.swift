@@ -7,6 +7,7 @@ public struct TTYEvent: Decodable, Sendable {
         case raw
         case resize
         case sleep
+        case theme // data: "dark" | "light"
     }
 
     public let type: Kind
@@ -61,6 +62,12 @@ public func replayTTY(
                 let mods = parseModifiers(event.modifiers)
                 vt.sendInput(.key(key, modifiers: mods))
             }
+        case .theme:
+            let palette: ThemePalette = {
+                if let data = event.data?.lowercased(), data == "light" { return .light() }
+                return .dark()
+            }()
+            tui.apply(theme: palette)
         }
         tui.renderNow()
     }
@@ -82,6 +89,7 @@ private func parseKey(_ token: String) -> TerminalKey {
     case "down": return .arrowDown
     case "home": return .home
     case "end": return .end
+    case "space": return .character(" ")
     default:
         if token.count == 1, let first = token.first {
             return .character(first)
