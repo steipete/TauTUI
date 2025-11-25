@@ -262,3 +262,5 @@ TauTUI stays aligned with pi-tui—bug fixes or new components in the TypeScript
 ## Credits
 
 All credit for the design goes to Mario Zechner and the pi-tui contributors. TauTUI simply brings the same experience to Swift with a native API surface.
+
+License: MIT • Peter Steinberger ([steipete](https://twitter.com/steipete))
