@@ -1,4 +1,4 @@
-# TauTUI - Swift-native TUI that won’t tear. ⚡
+# TauTUI - Swift-native TUI that won’t tear. 🖥️
 
 <p align="center">
   <img src="tautui-logo.png" alt="TauTUI logo" width="640">
