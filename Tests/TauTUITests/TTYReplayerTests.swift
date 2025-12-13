@@ -47,7 +47,7 @@ struct TTYReplayerTests {
             }
         }
 
-        let log = result.outputLog.joined(separator: "")
+        let log = result.outputLog.joined()
         #expect(log.contains("Hi"))
         #expect(log.contains("there"))
     }
