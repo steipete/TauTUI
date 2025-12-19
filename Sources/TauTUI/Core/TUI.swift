@@ -60,8 +60,19 @@ public final class TUI: Container {
     // MARK: - Input
 
     private func handleInput(_ input: TerminalInput) {
-        self.focusedComponent?.handle(input: input)
+        self._handleInput(input)
         self.requestRender()
+    }
+    
+    private func _handleInput(_ input: TerminalInput) {
+        switch input {
+        case .key(.character("c"), let modifiers):
+            if modifiers.contains(.control) {
+                exit(0)
+            }
+        default:
+            self.focusedComponent?.handle(input: input)
+        }
     }
 
     // MARK: - Rendering
