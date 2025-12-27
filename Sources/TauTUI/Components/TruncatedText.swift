@@ -55,7 +55,7 @@ public final class TruncatedText: Component {
         var index = firstLine.startIndex
 
         while index < firstLine.endIndex {
-            if let ansi = self.extractAnsi(in: firstLine, from: index) {
+            if let ansi = Self.extractAnsi(in: firstLine, from: index) {
                 index = ansi.next
                 truncateAt = index
                 continue
@@ -75,7 +75,50 @@ public final class TruncatedText: Component {
         return prefix + "\u{001B}[0m..."
     }
 
-    private func extractAnsi(in text: String, from index: String.Index) -> (code: String, next: String.Index)? {
+    public static func truncate(_ text: String, toWidth maxWidth: Int, ellipsis: String = "...") -> String {
+        guard maxWidth > 0 else { return "" }
+
+        // Only render up to the first newline
+        var firstLine = text
+        if let newline = text.firstIndex(of: "\n") {
+            firstLine = String(text[..<newline])
+        }
+
+        let visible = VisibleWidth.measure(firstLine)
+        guard visible > maxWidth else { return firstLine }
+
+        let ellipsisWidth = VisibleWidth.measure(ellipsis)
+        let target = maxWidth - ellipsisWidth
+        if target <= 0 {
+            return String(ellipsis.prefix(maxWidth))
+        }
+
+        var currentWidth = 0
+        var truncateAt = firstLine.startIndex
+        var index = firstLine.startIndex
+
+        while index < firstLine.endIndex {
+            if let ansi = Self.extractAnsi(in: firstLine, from: index) {
+                index = ansi.next
+                truncateAt = index
+                continue
+            }
+
+            let char = firstLine[index]
+            let charWidth = VisibleWidth.measure(String(char))
+            if currentWidth + charWidth > target {
+                break
+            }
+            currentWidth += charWidth
+            truncateAt = firstLine.index(after: index)
+            index = truncateAt
+        }
+
+        let prefix = String(firstLine[..<truncateAt])
+        return prefix + "\u{001B}[0m" + ellipsis
+    }
+
+    private static func extractAnsi(in text: String, from index: String.Index) -> (code: String, next: String.Index)? {
         guard text[index] == "\u{001B}", text.index(after: index) < text.endIndex else { return nil }
         var current = text.index(after: index)
         while current < text.endIndex {

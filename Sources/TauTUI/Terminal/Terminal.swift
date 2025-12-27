@@ -45,6 +45,7 @@ public enum TerminalInput: Sendable {
     case key(TerminalKey, modifiers: KeyModifiers = [])
     case paste(String)
     case raw(String)
+    case terminalCellSize(widthPx: Int, heightPx: Int)
 }
 
 // MARK: - Terminal Protocol
@@ -251,6 +252,11 @@ public final class ProcessTerminal: Terminal {
         self.processPendingInput()
     }
 
+    private enum ParsedEscape {
+        case key(TerminalKey, KeyModifiers)
+        case terminalCellSize(widthPx: Int, heightPx: Int)
+    }
+
     private func processPendingInput() {
         while !self.pendingInput.isEmpty {
             if self.isInBracketedPaste {
@@ -292,7 +298,12 @@ public final class ProcessTerminal: Terminal {
             }
 
             if let (event, consumed) = parseEscapeSequence() {
-                self.emitKey(event.0, modifiers: event.1)
+                switch event {
+                case let .key(key, modifiers):
+                    self.emitKey(key, modifiers: modifiers)
+                case let .terminalCellSize(widthPx, heightPx):
+                    self.inputHandler?(.terminalCellSize(widthPx: widthPx, heightPx: heightPx))
+                }
                 self.pendingInput.removeFirstCharacters(consumed)
                 continue
             }
@@ -328,7 +339,7 @@ public final class ProcessTerminal: Terminal {
         }
     }
 
-    private func parseEscapeSequence() -> ((TerminalKey, KeyModifiers), Int)? {
+    private func parseEscapeSequence() -> (ParsedEscape, Int)? {
         // Normalize everything that starts with ESC so downstream components
         // only see semantic keys + modifiers. This mirrors xterm-style
         // modifier encodings (CSI 1;{mod}<letter>/~) and the common "Meta"
@@ -340,30 +351,51 @@ public final class ProcessTerminal: Terminal {
 
         if second == "[" {
             guard let (sequence, length) = extractCSISequence(from: scalars) else { return nil }
+            if let cellSize = self.parseCellSizeResponse(sequence) {
+                return (.terminalCellSize(widthPx: cellSize.widthPx, heightPx: cellSize.heightPx), length)
+            }
             let parsed = self.mapCSISequence(sequence)
-            return (parsed, length)
+            return (.key(parsed.0, parsed.1), length)
         } else if second == "O" {
             guard scalars.count >= 3 else { return nil }
             let seq = String(String.UnicodeScalarView(scalars[0..<3]))
-            return (self.mapSS3Sequence(seq), 3)
+            let mapped = self.mapSS3Sequence(seq)
+            return (.key(mapped.0, mapped.1), 3)
         } else {
             // ESC + key is treated as Option/Meta on most terminals.
             let consumed = 2
             if second.value == 0x7F { // ESC + DEL (Option+Backspace)
-                return ((.backspace, [.option]), consumed)
+                return (.key(.backspace, [.option]), consumed)
             }
             let char = Character(String(second))
             switch char {
             case "b": // Option+Left on macOS terminals
-                return ((.arrowLeft, [.option]), consumed)
+                return (.key(.arrowLeft, [.option]), consumed)
             case "f": // Option+Right
-                return ((.arrowRight, [.option]), consumed)
+                return (.key(.arrowRight, [.option]), consumed)
             case "d": // Option+Delete-forward
-                return ((.delete, [.option]), consumed)
+                return (.key(.delete, [.option]), consumed)
             default:
-                return ((.character(char), [.option]), consumed)
+                return (.key(.character(char), [.option]), consumed)
             }
         }
+    }
+
+    private func parseCellSizeResponse(_ sequence: String) -> (widthPx: Int, heightPx: Int)? {
+        // Response format: ESC [ 6 ; height ; width t  (from CSI 16 t query)
+        guard sequence.hasPrefix("\u{001B}[") else { return nil }
+        guard sequence.hasSuffix("t") else { return nil }
+
+        let body = sequence.dropFirst(2)
+        let paramString = body.dropLast()
+        let params = paramString.split(separator: ";").compactMap { Int($0) }
+        guard params.count >= 3, params[0] == 6 else { return nil }
+
+        let heightPx = params[1]
+        let widthPx = params[2]
+        guard heightPx > 0, widthPx > 0 else { return nil }
+
+        return (widthPx: widthPx, heightPx: heightPx)
     }
 
     private func extractCSISequence(from scalars: [UnicodeScalar]) -> (String, Int)? {

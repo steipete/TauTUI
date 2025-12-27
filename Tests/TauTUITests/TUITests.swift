@@ -65,6 +65,22 @@ struct TUIRenderingTests {
     }
 
     @MainActor @Test
+    func partialDiffClearsExtraOldLines() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        let tui = TUI(terminal: terminal, renderScheduler: { $0() })
+        let component = DummyComponent(lines: ["one", "two", "three"])
+        tui.addChild(component)
+        try tui.start()
+
+        component.lines = ["one"]
+        tui.requestRender()
+
+        let last = terminal.outputLog.last ?? ""
+        #expect(last.contains("\u{001B}[2K"))
+        #expect(last.contains("\u{001B}[2A"))
+    }
+
+    @MainActor @Test
     func controlCInvokesHandlerAndSkipsFocusedComponent() throws {
         let terminal = VirtualTerminal(columns: 20, rows: 5)
         let tui = TUI(terminal: terminal, renderScheduler: { $0() })

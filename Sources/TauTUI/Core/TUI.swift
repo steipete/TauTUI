@@ -44,6 +44,7 @@ public final class TUI: Container {
             self?.requestRender()
         })
         self.terminal.hideCursor()
+        self.queryCellSizeIfNeeded()
         self.requestRender()
     }
 
@@ -72,6 +73,13 @@ public final class TUI: Container {
     // MARK: - Input
 
     private func handleInput(_ input: TerminalInput) {
+        if case let .terminalCellSize(widthPx, heightPx) = input {
+            TerminalImage.setCellDimensions(.init(widthPx: widthPx, heightPx: heightPx))
+            self.invalidate()
+            self.requestRender()
+            return
+        }
+
         if self.handlesControlC,
            case let .key(.character("c"), modifiers) = input,
            modifiers.contains(.control)
@@ -87,6 +95,13 @@ public final class TUI: Container {
 
         self.focusedComponent?.handle(input: input)
         self.requestRender()
+    }
+
+    private func queryCellSizeIfNeeded() {
+        guard TerminalImage.getCapabilities().images != nil else { return }
+        // Query terminal for cell size in pixels: CSI 16 t
+        // Response format: CSI 6 ; height ; width t
+        self.terminal.write("\u{001B}[16t")
     }
 
     // MARK: - Rendering
@@ -176,17 +191,33 @@ public final class TUI: Container {
         } else if lineDiff < 0 {
             buffer += ANSI.cursorUp(-lineDiff)
         }
-        buffer += ANSI.carriageReturn + ANSI.clearToScreenEnd
+
+        buffer += ANSI.carriageReturn
 
         for index in start..<lines.count {
             if index > start { buffer += "\r\n" }
             let line = lines[index]
-            precondition(VisibleWidth.measure(line) <= self.terminal.columns, "Rendered line exceeds width")
+            if !self.containsImage(line) {
+                precondition(VisibleWidth.measure(line) <= self.terminal.columns, "Rendered line exceeds width")
+            }
+            buffer += ANSI.clearLine
             buffer += line
+        }
+
+        if self.previousLines.count > lines.count {
+            let extraLines = self.previousLines.count - lines.count
+            for _ in 0..<extraLines {
+                buffer += "\r\n" + ANSI.clearLine
+            }
+            buffer += ANSI.cursorUp(extraLines)
         }
 
         buffer += ANSI.syncEnd
         self.terminal.write(buffer)
+    }
+
+    private func containsImage(_ line: String) -> Bool {
+        line.contains("\u{001B}_G") || line.contains("\u{001B}]1337;File=")
     }
 
     /// Testing/debug helper: render synchronously instead of via requestRender().

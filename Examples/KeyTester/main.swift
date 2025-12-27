@@ -49,6 +49,8 @@ final class KeyLogger: Component {
             self.append("PASTE| \(text.count) chars")
         case let .key(key, modifiers):
             self.append("KEY  | \(self.describe(key: key, modifiers: modifiers))")
+        case let .terminalCellSize(widthPx, heightPx):
+            self.append("TERM | cellSize=\(widthPx)x\(heightPx)px")
         }
         let notifier = self.requestRender
         Task { await notifier() }

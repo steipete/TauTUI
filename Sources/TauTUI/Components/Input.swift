@@ -48,6 +48,8 @@ public final class Input: Component {
             self.insert(self.cleanedPaste(text))
         case .raw:
             break
+        case .terminalCellSize:
+            break
         }
     }
 

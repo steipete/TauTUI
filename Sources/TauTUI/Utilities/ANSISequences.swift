@@ -7,7 +7,7 @@ public enum ANSI {
 
     // Clearing helpers
     public static let clearToScreenEnd = "\u{001B}[J"
-    public static let clearLine = "\u{001B}[K"
+    public static let clearLine = "\u{001B}[2K"
     public static let clearScreen = "\u{001B}[2J\u{001B}[H"
     public static let clearScrollbackAndScreen = "\u{001B}[3J\u{001B}[2J\u{001B}[H"
 

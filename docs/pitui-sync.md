@@ -6,10 +6,15 @@ Context: upstream `pi-mono` checkout lives at `../../pi-mono` (`/Users/steipete/
 - Auto-space before pasted file paths (prefix `/`, `~`, `.`) when cursor is after a word char.
 - Input: Ctrl+Left/Right + Alt+Left/Right word navigation; Ctrl+W readline-style deletion; full Unicode input.
 - Terminal: Kitty keyboard protocol support (CSI `...u` sequences) and more robust escape/lock-bit handling.
+- Components: `Box`, `SettingsList`, and `Image` (kitty/iterm2 via `terminal-image`) exports.
+- Runtime: query terminal cell pixel size (CSI `16t` → CSI `6;height;widtht`) to size images; diff renderer clears each line (CSI `2K`) and clears extra old lines.
 
 ## TauTUI sync status
 - `ProcessTerminal`: enables Kitty keyboard protocol, parses CSI-u sequences, maps Escape; `.raw` input events are opt-in (debug-only).
 - `Input`/`Editor`: readline-style word motion + deletion parity; paste safety-space for file paths; tests added.
+- `Box` + `SettingsList`: Swift ports aligned with pi-mono APIs; tests added.
+- `TerminalImage` + `Image`: kitty/iTerm2 encoding + image dimension sniffers (png/jpeg/gif/webp); `TUI` queries + applies cell size; tests added.
+- `TUI`: partial diff clears each line (CSI `2K`) and clears trailing old lines; skips width precondition for image escape lines.
 
 # pi-tui sync log (Nov 18–21, 2025)
 

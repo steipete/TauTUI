@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file.
 - Sync pi-mono keyboard handling: enable Kitty keyboard protocol, parse CSI-u sequences, and keep `.raw` input events opt-in (debug-only).
 - Input: add common readline-style shortcuts (Ctrl+A/E/U/K/W) plus word navigation/deletion; ignore raw escape sequences.
 - Editor: Ctrl+W word deletion now matches whitespace/punctuation run semantics; file-path pastes auto-prepend a safety space when needed.
+- Add `Box`, `SettingsList`, and `Image` components (pi-mono parity) with tests.
+- Add terminal image support (`TerminalImage`) for kitty + iTerm2, including image dimension sniffers (png/jpeg/gif/webp).
+- TUI: query terminal cell pixel size (CSI `16t`) and handle responses via `.terminalCellSize` input events.
+- TUI: partial diff renderer clears each line (CSI `2K`) and clears trailing old lines; image escape lines skip width preconditions.
 
 ## [0.1.4] - 2025-11-21
 - Added golden snapshots for TTYSampler scenarios (select, markdown, markdown tables) under `Tests/Fixtures/TTY`, with tests that replay scripts for visual regressions.

@@ -72,6 +72,8 @@ public final class Editor: Component {
             self.handleKey(key, modifiers: modifiers)
         case .raw:
             break
+        case .terminalCellSize:
+            break
         }
     }
 
