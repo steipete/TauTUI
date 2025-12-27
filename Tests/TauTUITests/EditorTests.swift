@@ -141,6 +141,30 @@ struct EditorTests {
     }
 
     @Test
+    func ctrlWDeletesWhitespaceThenWord() async throws {
+        let editor = Editor()
+        editor.setText("hello   world")
+
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "hello   ")
+
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText().isEmpty)
+    }
+
+    @Test
+    func ctrlWDeletesPunctuationRuns() async throws {
+        let editor = Editor()
+        editor.setText("foo.bar")
+
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "foo.")
+
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "foo")
+    }
+
+    @Test
     func optionDeleteForwardDeletesWord() async throws {
         let editor = Editor()
         editor.setText("hello world")
@@ -160,7 +184,7 @@ struct EditorTests {
     @Test
     func vscodeShiftEnterSequenceAddsNewline() async throws {
         let editor = Editor()
-        editor.handle(input: .raw("\\\r"))
+        editor.handle(input: .key(.enter, modifiers: [.shift]))
         #expect(editor.getText() == "\n")
     }
 

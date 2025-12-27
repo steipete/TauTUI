@@ -88,8 +88,17 @@ public final class ProcessTerminal: Terminal {
     private var isInBracketedPaste = false
     private var pasteBuffer = ""
 
+    /// Emit `.raw` events for debugging/inspection (e.g. KeyTester).
+    /// Off by default because `.key`/`.paste` already cover functional input.
+    public var emitsRawInputEvents: Bool = false
+
     private static let bracketedPasteStart = "\u{001B}[200~"
     private static let bracketedPasteEnd = "\u{001B}[201~"
+
+    // Kitty keyboard protocol (disambiguate key sequences).
+    // https://sw.kovidgoyal.net/kitty/keyboard-protocol/
+    private static let kittyKeyboardProtocolEnable = "\u{001B}[>1u"
+    private static let kittyKeyboardProtocolDisable = "\u{001B}[<u"
 
     // Enter variants some terminals emit with modifiers.
     private static let shiftEnterCSI = "\u{001B}[13;2~"
@@ -122,6 +131,7 @@ public final class ProcessTerminal: Terminal {
 
         try self.enableRawMode()
         self.write("\u{001B}[?2004h") // bracketed paste on
+        self.write(Self.kittyKeyboardProtocolEnable) // kitty keyboard protocol on
 
         let source = DispatchSource.makeReadSource(fileDescriptor: self.inputFD.rawValue, queue: .main)
         source.setEventHandler { [weak self] in
@@ -158,6 +168,7 @@ public final class ProcessTerminal: Terminal {
         self.resizeSource = nil
 
         self.write("\u{001B}[?2004l") // bracketed paste off
+        self.write(Self.kittyKeyboardProtocolDisable) // kitty keyboard protocol off
         self.disableRawMode()
 
         self.inputHandler = nil
@@ -233,7 +244,9 @@ public final class ProcessTerminal: Terminal {
 
     fileprivate func handleRawChunk(_ chunk: String) {
         guard !chunk.isEmpty else { return }
-        self.inputHandler?(.raw(chunk))
+        if self.emitsRawInputEvents {
+            self.inputHandler?(.raw(chunk))
+        }
         self.pendingInput.append(chunk)
         self.processPendingInput()
     }
@@ -292,6 +305,8 @@ public final class ProcessTerminal: Terminal {
     private func handleCharacter(_ char: Character) {
         guard let scalar = char.unicodeScalars.first else { return }
         switch scalar.value {
+        case 0x1B:
+            self.emitKey(.escape)
         case 0x0D:
             self.emitKey(.enter)
         case 0x0A:
@@ -389,6 +404,10 @@ public final class ProcessTerminal: Terminal {
             var mods = modifiers
             mods.insert(.shift) // CSI Z is Shift+Tab; keep explicit flag even if param absent
             return (.tab, mods)
+        case "u":
+            let modParam = params.count >= 2 ? (params.dropFirst().first ?? 1) : 1
+            let kittyMods = self.mapKittyModifiers(from: modParam)
+            return (self.mapKittyCodepoint(primary, fallbackSequence: sequence), kittyMods)
         case "~":
             switch primary {
             case 1, 7: return (.home, modifiers)
@@ -451,6 +470,35 @@ public final class ProcessTerminal: Terminal {
         case 11: [.meta, .control]
         case 12: [.shift, .meta, .control]
         default: []
+        }
+    }
+
+    private func mapKittyModifiers(from csiModifier: Int) -> KeyModifiers {
+        // Kitty protocol transmits (modifierBits + 1). We also mask out lock bits (Caps/Num)
+        // so they don’t affect key matching (some terminals include them).
+        let raw = max(csiModifier - 1, 0)
+        let masked = raw & ~192 // 64 + 128
+
+        var mods: KeyModifiers = []
+        if (masked & 1) != 0 { mods.insert(.shift) }
+        if (masked & 2) != 0 { mods.insert(.option) }
+        if (masked & 4) != 0 { mods.insert(.control) }
+        if (masked & 8) != 0 { mods.insert(.command) }
+        if (masked & 32) != 0 { mods.insert(.meta) }
+        return mods
+    }
+
+    private func mapKittyCodepoint(_ codepoint: Int, fallbackSequence: String) -> TerminalKey {
+        switch codepoint {
+        case 9: return .tab
+        case 13: return .enter
+        case 27: return .escape
+        case 8, 127: return .backspace
+        default:
+            guard codepoint >= 0, let scalar = UnicodeScalar(UInt32(codepoint)) else {
+                return .unknown(sequence: fallbackSequence)
+            }
+            return .character(Character(scalar))
         }
     }
 

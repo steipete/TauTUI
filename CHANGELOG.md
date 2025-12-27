@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.5] - Unreleased
 - TUI now intercepts Ctrl+C by default (stop terminal + exit), with an override hook and tests.
+- Sync pi-mono keyboard handling: enable Kitty keyboard protocol, parse CSI-u sequences, and keep `.raw` input events opt-in (debug-only).
+- Input: add common readline-style shortcuts (Ctrl+A/E/U/K/W) plus word navigation/deletion; ignore raw escape sequences.
+- Editor: Ctrl+W word deletion now matches whitespace/punctuation run semantics; file-path pastes auto-prepend a safety space when needed.
 
 ## [0.1.4] - 2025-11-21
 - Added golden snapshots for TTYSampler scenarios (select, markdown, markdown tables) under `Tests/Fixtures/TTY`, with tests that replay scripts for visual regressions.

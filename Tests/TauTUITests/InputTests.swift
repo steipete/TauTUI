@@ -23,13 +23,44 @@ struct InputTests {
     }
 
     @Test
-    func bracketedPasteBuffersAndStripsNewlines() async throws {
+    func pasteStripsNewlines() async throws {
         let input = Input()
-        input.handle(input: .raw("\u{001B}[200~hello"))
-        input.handle(input: .raw(" world\n\u{001B}[201~"))
+        input.handle(input: .paste("hello world\n"))
         #expect(input.value == "hello world")
 
         input.handle(input: .paste("more\nlines"))
         #expect(input.value == "hello worldmorelines")
+
+        input.handle(input: .raw("\u{001B}[A"))
+        #expect(input.value == "hello worldmorelines")
+    }
+
+    @Test
+    func ctrlAMovesToStartAndCtrlEMovesToEnd() async throws {
+        let input = Input(value: "hello")
+        input.handle(input: .key(.character("a"), modifiers: [.control]))
+        input.handle(input: .key(.character("x")))
+        #expect(input.value == "xhello")
+
+        input.handle(input: .key(.character("e"), modifiers: [.control]))
+        input.handle(input: .key(.character("y")))
+        #expect(input.value == "xhelloy")
+    }
+
+    @Test
+    func ctrlWDeletesWhitespaceThenWord() async throws {
+        let input = Input(value: "hello   world")
+        input.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(input.value == "hello   ")
+
+        input.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(input.value.isEmpty)
+    }
+
+    @Test
+    func optionBackspaceDeletesWord() async throws {
+        let input = Input(value: "hello world")
+        input.handle(input: .key(.backspace, modifiers: [.option]))
+        #expect(input.value == "hello ")
     }
 }

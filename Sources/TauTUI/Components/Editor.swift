@@ -32,8 +32,6 @@ public final class Editor: Component {
     // Large pastes are stored and replaced by markers until submit, mirroring pi-tui.
     private var pastes: [Int: String] = [:]
     private var pasteCounter = 0
-    private var pasteBuffer = ""
-    private var isInPaste = false
 
     public var disableSubmit = false
     public var onSubmit: ((String) -> Void)?
@@ -68,12 +66,12 @@ public final class Editor: Component {
 
     public func handle(input: TerminalInput) {
         switch input {
-        case let .raw(data):
-            self.handleRawInput(data) // raw captures escape sequences and bracketed paste markers
         case let .paste(text):
-            self.handlePaste(text) // direct paste from TerminalInput bypassing bracket markers
+            self.handlePaste(text)
         case let .key(key, modifiers):
             self.handleKey(key, modifiers: modifiers)
+        case .raw:
+            break
         }
     }
 
@@ -125,47 +123,6 @@ public final class Editor: Component {
             return rendered
         }
         return line
-    }
-
-    private func handleRawInput(_ data: String) {
-        var buffer = data
-        if buffer.contains("\u{001B}[200~") {
-            self.isInPaste = true
-            buffer = buffer.replacingOccurrences(of: "\u{001B}[200~", with: "")
-        }
-
-        // VSCode maps Shift+Enter to "\\\r"; normalize to newline to mirror upstream behavior.
-        if buffer.contains("\\\r") {
-            buffer = buffer.replacingOccurrences(of: "\\\r", with: "\n")
-        }
-        if self.isInPaste {
-            self.pasteBuffer += buffer
-            if self.pasteBuffer.contains("\u{001B}[201~") {
-                let components = self.pasteBuffer.components(separatedBy: "\u{001B}[201~")
-                let pasteContent = components.first ?? ""
-                self.handlePaste(pasteContent)
-                self.pasteBuffer = components.dropFirst().joined()
-                self.isInPaste = false
-                if !self.pasteBuffer.isEmpty {
-                    self.handleRawInput(self.pasteBuffer)
-                    self.pasteBuffer = ""
-                }
-            }
-            return
-        }
-        for scalar in buffer {
-            switch scalar {
-            case "\u{0003}":
-                return
-            case "\r":
-                if self.disableSubmit { return }
-                self.submit()
-            case "\n":
-                self.insertNewLine()
-            default:
-                break
-            }
-        }
     }
 
     // swiftlint:disable cyclomatic_complexity
@@ -334,6 +291,10 @@ public final class Editor: Component {
         return punctuation.contains(ch)
     }
 
+    private func isWordCharacter(_ ch: Character) -> Bool {
+        ch.isLetter || ch.isNumber || ch == "_"
+    }
+
     private func isBoundary(_ ch: Character) -> Bool {
         ch.isWhitespace || self.isPunctuation(ch)
     }
@@ -341,7 +302,7 @@ public final class Editor: Component {
     private func handlePaste(_ text: String) {
         let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         let spacesExpanded = normalized.replacingOccurrences(of: "\t", with: "    ")
-        let sanitized = spacesExpanded.reduce(into: "") { partial, char in
+        var sanitized = spacesExpanded.reduce(into: "") { partial, char in
             if char == "\n" {
                 partial.append(char)
                 return
@@ -352,6 +313,21 @@ public final class Editor: Component {
                 partial.append(char)
             }
         }
+
+        // If pasting a file path and the character before the cursor is a word character, prepend a space.
+        if let first = sanitized.first,
+           first == "/" || first == "~" || first == "."
+        {
+            let currentLine = self.buffer.lines[self.buffer.cursorLine]
+            if self.buffer.cursorCol > 0, self.buffer.cursorCol <= currentLine.count {
+                let beforeIndex = currentLine.index(currentLine.startIndex, offsetBy: self.buffer.cursorCol - 1)
+                let charBeforeCursor = currentLine[beforeIndex]
+                if self.isWordCharacter(charBeforeCursor) {
+                    sanitized = " " + sanitized
+                }
+            }
+        }
+
         let lines = sanitized.split(separator: "\n", omittingEmptySubsequences: false)
         if lines.count > 10 || sanitized.count > 1000 {
             self.pasteCounter += 1

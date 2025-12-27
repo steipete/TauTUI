@@ -142,4 +142,20 @@ struct TUIRenderingTests {
         #expect(events
             .contains(where: { if case let .key(.enter, m) = $0 { return m.contains(.shift) }; return false }))
     }
+
+    @Test
+    func keyEventNormalization_kittyCSIU() throws {
+        let parser = ProcessTerminal()
+        let payload = "\u{001B}[13;2u\u{001B}[27u\u{001B}[119;5u\u{001B}[127;3u"
+        let events = parser.parseForTests(payload)
+
+        #expect(events
+            .contains(where: { if case let .key(.enter, m) = $0 { return m.contains(.shift) }; return false }))
+        #expect(events.contains(where: { if case .key(.escape, _) = $0 { return true }; return false }))
+        #expect(events
+            .contains(where: { if case let .key(.character("w"), m) = $0 { return m.contains(.control) }; return false
+            }))
+        #expect(events
+            .contains(where: { if case let .key(.backspace, m) = $0 { return m.contains(.option) }; return false }))
+    }
 }

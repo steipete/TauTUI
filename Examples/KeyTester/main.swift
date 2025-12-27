@@ -91,6 +91,7 @@ final class KeyLogger: Component {
 struct KeyTester {
     static func main() {
         let terminal = ProcessTerminal()
+        terminal.emitsRawInputEvents = true
         let tui = TUI(terminal: terminal)
         tui.apply(theme: ThemePalette.light())
         let logger = KeyLogger(requestRender: { @MainActor in

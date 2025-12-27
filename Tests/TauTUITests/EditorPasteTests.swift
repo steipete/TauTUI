@@ -40,4 +40,14 @@ struct EditorPasteTests {
         #expect(submitted?.contains("[paste #12") == true)
         #expect(submitted?.starts(with: "hello") == true)
     }
+
+    @Test
+    func pastePrependsSpaceForFilePathsAfterWordCharacter() async throws {
+        let editor = Editor()
+        editor.setText("hello")
+
+        editor.handle(input: .paste("/tmp/file.txt"))
+
+        #expect(editor.getText() == "hello /tmp/file.txt")
+    }
 }

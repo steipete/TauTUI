@@ -5,8 +5,6 @@ public final class Input: Component {
     }
 
     private var cursor: Int
-    private var pasteBuffer: String = ""
-    private var isInPaste = false
     public var onSubmit: ((String) -> Void)?
 
     public init(value: String = "") {
@@ -48,56 +46,54 @@ public final class Input: Component {
             self.handleKey(key, modifiers: modifiers)
         case let .paste(text):
             self.insert(self.cleanedPaste(text))
-        case let .raw(data):
-            self.handleRaw(data)
+        case .raw:
+            break
         }
-    }
-
-    private func handleRaw(_ data: String) {
-        var buffer = data
-
-        if buffer.contains("\u{001B}[200~") {
-            self.isInPaste = true
-            buffer = buffer.replacingOccurrences(of: "\u{001B}[200~", with: "")
-        }
-
-        if self.isInPaste {
-            self.pasteBuffer += buffer
-            if let endRange = self.pasteBuffer.range(of: "\u{001B}[201~") {
-                let beforeEnd = String(self.pasteBuffer[..<endRange.lowerBound])
-                self.insert(self.cleanedPaste(beforeEnd))
-                let trailing = String(self.pasteBuffer[endRange.upperBound...])
-                self.pasteBuffer.removeAll(keepingCapacity: false)
-                self.isInPaste = false
-                if !trailing.isEmpty {
-                    self.handleRaw(trailing)
-                }
-            }
-            return
-        }
-
-        buffer.forEach { self.insert(String($0)) }
     }
 
     private func handleKey(_ key: TerminalKey, modifiers: KeyModifiers) {
         switch key {
         case let .character(char):
-            self.insert(String(char))
+            if modifiers.contains(.control) {
+                switch char.lowercased() {
+                case "a":
+                    self.cursor = 0
+                case "e":
+                    self.cursor = self.value.count
+                case "w":
+                    self.deleteWordBackwards()
+                case "u":
+                    self.deleteToStartOfLine()
+                case "k":
+                    self.deleteToEndOfLine()
+                default:
+                    break
+                }
+            } else {
+                self.insert(String(char))
+            }
         case .enter:
             self.onSubmit?(self.value)
         case .backspace:
-            guard self.cursor > 0 else { return }
-            let index = self.value.index(self.value.startIndex, offsetBy: self.cursor - 1)
-            self.value.remove(at: index)
-            self.cursor -= 1
+            if modifiers.contains(.option) {
+                self.deleteWordBackwards()
+            } else {
+                self.backspace()
+            }
         case .delete:
-            guard self.cursor < self.value.count else { return }
-            let index = self.value.index(self.value.startIndex, offsetBy: self.cursor)
-            self.value.remove(at: index)
+            self.deleteForward()
         case .arrowLeft:
-            self.cursor = max(0, self.cursor - 1)
+            if modifiers.contains(.control) || modifiers.contains(.option) {
+                self.moveWordBackwards()
+            } else {
+                self.cursor = max(0, self.cursor - 1)
+            }
         case .arrowRight:
-            self.cursor = min(self.value.count, self.cursor + 1)
+            if modifiers.contains(.control) || modifiers.contains(.option) {
+                self.moveWordForwards()
+            } else {
+                self.cursor = min(self.value.count, self.cursor + 1)
+            }
         case .home:
             self.cursor = 0
         case .end:
@@ -105,6 +101,99 @@ public final class Input: Component {
         default:
             break
         }
+    }
+
+    private func backspace() {
+        guard self.cursor > 0 else { return }
+        let index = self.value.index(self.value.startIndex, offsetBy: self.cursor - 1)
+        self.value.remove(at: index)
+        self.cursor -= 1
+    }
+
+    private func deleteForward() {
+        guard self.cursor < self.value.count else { return }
+        let index = self.value.index(self.value.startIndex, offsetBy: self.cursor)
+        self.value.remove(at: index)
+    }
+
+    private func deleteToStartOfLine() {
+        guard self.cursor > 0 else { return }
+        let start = self.value.startIndex
+        let end = self.value.index(start, offsetBy: self.cursor)
+        self.value.removeSubrange(start..<end)
+        self.cursor = 0
+    }
+
+    private func deleteToEndOfLine() {
+        guard self.cursor < self.value.count else { return }
+        let start = self.value.index(self.value.startIndex, offsetBy: self.cursor)
+        self.value.removeSubrange(start..<self.value.endIndex)
+    }
+
+    private func deleteWordBackwards() {
+        guard self.cursor > 0 else { return }
+        let oldCursor = self.cursor
+        self.moveWordBackwards()
+        let deleteFrom = self.cursor
+        self.cursor = oldCursor
+
+        let start = self.value.index(self.value.startIndex, offsetBy: deleteFrom)
+        let end = self.value.index(self.value.startIndex, offsetBy: self.cursor)
+        self.value.removeSubrange(start..<end)
+        self.cursor = deleteFrom
+    }
+
+    private func moveWordBackwards() {
+        guard self.cursor > 0 else { return }
+        let chars = Array(self.value)
+        var idx = self.cursor
+
+        while idx > 0, chars[idx - 1].isWhitespace {
+            idx -= 1
+        }
+
+        if idx > 0 {
+            if self.isPunctuation(chars[idx - 1]) {
+                while idx > 0, self.isPunctuation(chars[idx - 1]) {
+                    idx -= 1
+                }
+            } else {
+                while idx > 0, !chars[idx - 1].isWhitespace, !self.isPunctuation(chars[idx - 1]) {
+                    idx -= 1
+                }
+            }
+        }
+
+        self.cursor = idx
+    }
+
+    private func moveWordForwards() {
+        let chars = Array(self.value)
+        guard self.cursor < chars.count else { return }
+        var idx = self.cursor
+
+        while idx < chars.count, chars[idx].isWhitespace {
+            idx += 1
+        }
+
+        if idx < chars.count {
+            if self.isPunctuation(chars[idx]) {
+                while idx < chars.count, self.isPunctuation(chars[idx]) {
+                    idx += 1
+                }
+            } else {
+                while idx < chars.count, !chars[idx].isWhitespace, !self.isPunctuation(chars[idx]) {
+                    idx += 1
+                }
+            }
+        }
+
+        self.cursor = idx
+    }
+
+    private func isPunctuation(_ ch: Character) -> Bool {
+        let punctuation: Set<Character> = Set("(){}[]<>.,;:'\"!?+-=*/\\|&%^$#@~`")
+        return punctuation.contains(ch)
     }
 
     private func insert(_ string: String) {

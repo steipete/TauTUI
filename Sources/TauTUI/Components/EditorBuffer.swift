@@ -88,19 +88,13 @@ public struct EditorBuffer: Sendable {
             return
         }
 
-        var deleteTo = self.cursorCol
-        while deleteTo < line.count {
-            let ch = line[line.index(line.startIndex, offsetBy: deleteTo)]
-            if isBoundary(ch) { deleteTo += 1 } else { break }
-        }
-        while deleteTo < line.count {
-            let ch = line[line.index(line.startIndex, offsetBy: deleteTo)]
-            if isBoundary(ch) { break }
-            deleteTo += 1
-        }
+        let oldCursorCol = self.cursorCol
+        var tmp = self
+        tmp.moveByWord(1, isBoundary: isBoundary)
+        let deleteTo = tmp.cursorLine == self.cursorLine ? tmp.cursorCol : line.count
 
-        let start = line.index(line.startIndex, offsetBy: self.cursorCol)
-        let end = line.index(line.startIndex, offsetBy: deleteTo)
+        let start = line.index(line.startIndex, offsetBy: oldCursorCol)
+        let end = line.index(line.startIndex, offsetBy: min(deleteTo, line.count))
         line.removeSubrange(start..<end)
         self.lines[self.cursorLine] = line
     }
@@ -132,15 +126,15 @@ public struct EditorBuffer: Sendable {
             self.backspace()
             return
         }
-        var deleteFrom = self.cursorCol
-        while deleteFrom > 0 {
-            let prevIndex = line.index(line.startIndex, offsetBy: deleteFrom - 1)
-            let ch = line[prevIndex]
-            if isBoundary(ch) { break }
-            deleteFrom -= 1
-        }
+
+        let oldCursorCol = self.cursorCol
+        var tmp = self
+        tmp.moveByWord(-1, isBoundary: isBoundary)
+        let deleteFrom = tmp.cursorLine == self.cursorLine ? tmp.cursorCol : 0
+        self.cursorCol = oldCursorCol
+
         let start = line.index(line.startIndex, offsetBy: deleteFrom)
-        let end = line.index(line.startIndex, offsetBy: self.cursorCol)
+        let end = line.index(line.startIndex, offsetBy: oldCursorCol)
         line.removeSubrange(start..<end)
         self.lines[self.cursorLine] = line
         self.cursorCol = deleteFrom
@@ -156,29 +150,67 @@ public struct EditorBuffer: Sendable {
 
     public mutating func moveByWord(_ direction: Int, isBoundary: (Character) -> Bool) {
         guard direction != 0 else { return }
-        let line = self.lines[self.cursorLine]
+
+        if direction < 0, self.cursorCol == 0 {
+            if self.cursorLine > 0 {
+                self.cursorLine -= 1
+                self.cursorCol = self.lines[self.cursorLine].count
+            }
+            return
+        }
+
+        let currentLine = self.lines[self.cursorLine]
+        let chars = Array(currentLine)
+
+        if direction > 0, self.cursorCol >= chars.count {
+            if self.cursorLine < self.lines.count - 1 {
+                self.cursorLine += 1
+                self.cursorCol = 0
+            }
+            return
+        }
+
         var idx = self.cursorCol
         if direction > 0 {
-            while idx < line.count {
-                let ch = line[line.index(line.startIndex, offsetBy: idx)]
-                if isBoundary(ch) { idx += 1 } else { break }
-            }
-            while idx < line.count {
-                let ch = line[line.index(line.startIndex, offsetBy: idx)]
-                if isBoundary(ch) { break }
+            while idx < chars.count, chars[idx].isWhitespace {
                 idx += 1
             }
-        } else {
-            while idx > 0 {
-                let ch = line[line.index(line.startIndex, offsetBy: idx - 1)]
-                if isBoundary(ch) { idx -= 1 } else { break }
+
+            if idx < chars.count {
+                let isPunctuation = isBoundary(chars[idx]) && !chars[idx].isWhitespace
+                if isPunctuation {
+                    while idx < chars.count, isBoundary(chars[idx]), !chars[idx].isWhitespace {
+                        idx += 1
+                    }
+                } else {
+                    while idx < chars.count, !chars[idx].isWhitespace,
+                          !(isBoundary(chars[idx]) && !chars[idx].isWhitespace)
+                    {
+                        idx += 1
+                    }
+                }
             }
-            while idx > 0 {
-                let ch = line[line.index(line.startIndex, offsetBy: idx - 1)]
-                if isBoundary(ch) { break }
+        } else {
+            while idx > 0, chars[idx - 1].isWhitespace {
                 idx -= 1
             }
+
+            if idx > 0 {
+                let isPunctuation = isBoundary(chars[idx - 1]) && !chars[idx - 1].isWhitespace
+                if isPunctuation {
+                    while idx > 0, isBoundary(chars[idx - 1]), !chars[idx - 1].isWhitespace {
+                        idx -= 1
+                    }
+                } else {
+                    while idx > 0, !chars[idx - 1].isWhitespace,
+                          !(isBoundary(chars[idx - 1]) && !chars[idx - 1].isWhitespace)
+                    {
+                        idx -= 1
+                    }
+                }
+            }
         }
-        self.cursorCol = max(0, min(line.count, idx))
+
+        self.cursorCol = max(0, min(chars.count, idx))
     }
 }
