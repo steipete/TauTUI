@@ -1,7 +1,13 @@
                         
- │ Col A                  │ Col B         │
- ├────────────────────────┼───────────────┤
- │ Long cell value that wraps │ Short         │
- │ αβγδεζηθ               │ 😃 emoji cell │
+ ┌────────────┬───────┐ 
+ │ [1mCol A     [22m │ [1mCol B[22m │ 
+ ├────────────┼───────┤ 
+ │ Long cell  │ Short │ 
+ │ value that │       │ 
+ │ wraps      │       │ 
+ │ αβγδεζηθ   │ 😃    │ 
+ │            │ emoji │ 
+ │            │ cell  │ 
+ └────────────┴───────┘ 
                         
                         

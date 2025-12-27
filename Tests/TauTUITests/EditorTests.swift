@@ -179,6 +179,70 @@ struct EditorTests {
     }
 
     @Test
+    func ctrlWAndOptionBackspaceParity() async throws {
+        let editor = Editor()
+
+        editor.setText("foo bar baz")
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "foo bar ")
+
+        editor.setText("foo bar   ")
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "foo ")
+
+        editor.setText("foo bar...")
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "foo bar")
+
+        editor.setText("line one\nline two")
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "line one\nline ")
+
+        editor.setText("line one\n")
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "line one")
+
+        editor.setText("foo 😀😀 bar")
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "foo 😀😀 ")
+        editor.handle(input: .key(.character("w"), modifiers: [.control]))
+        #expect(editor.getText() == "foo ")
+
+        editor.setText("foo bar")
+        editor.handle(input: .key(.backspace, modifiers: [.option]))
+        #expect(editor.getText() == "foo ")
+    }
+
+    @Test
+    func ctrlLeftRightWordNavigationParity() async throws {
+        let editor = Editor()
+        editor.setText("foo bar... baz")
+
+        editor.handle(input: .key(.arrowLeft, modifiers: [.control]))
+        #expect(editor.getCursor() == CursorPosition(line: 0, col: 11))
+
+        editor.handle(input: .key(.arrowLeft, modifiers: [.control]))
+        #expect(editor.getCursor() == CursorPosition(line: 0, col: 7))
+
+        editor.handle(input: .key(.arrowLeft, modifiers: [.control]))
+        #expect(editor.getCursor() == CursorPosition(line: 0, col: 4))
+
+        editor.handle(input: .key(.arrowRight, modifiers: [.control]))
+        #expect(editor.getCursor() == CursorPosition(line: 0, col: 7))
+
+        editor.handle(input: .key(.arrowRight, modifiers: [.control]))
+        #expect(editor.getCursor() == CursorPosition(line: 0, col: 10))
+
+        editor.handle(input: .key(.arrowRight, modifiers: [.control]))
+        #expect(editor.getCursor() == CursorPosition(line: 0, col: 14))
+
+        editor.setText("   foo bar")
+        editor.handle(input: .key(.character("a"), modifiers: [.control]))
+        editor.handle(input: .key(.arrowRight, modifiers: [.control]))
+        #expect(editor.getCursor() == CursorPosition(line: 0, col: 6))
+    }
+
+    @Test
     func optionDeleteForwardDeletesWord() async throws {
         let editor = Editor()
         editor.setText("hello world")

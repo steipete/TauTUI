@@ -18,20 +18,37 @@ public struct EditorTheme: Sendable {
         selectList: .default)
 }
 
+public struct CursorPosition: Sendable, Equatable {
+    public let line: Int
+    public let col: Int
+
+    public init(line: Int, col: Int) {
+        self.line = line
+        self.col = col
+    }
+}
+
 public final class Editor: Component {
     // Pure, Sendable buffer keeps mutations testable and UI-free.
-    private var buffer = EditorBuffer()
-    private var config = TextEditorConfig()
+    var buffer = EditorBuffer()
+    var config = TextEditorConfig()
 
     // Autocomplete is optional and pluggable (slash commands + file completion).
-    private var autocompleteProvider: AutocompleteProvider?
-    private var autocompleteList: SelectList?
-    private var isAutocompleting = false
-    private var autocompletePrefix = ""
+    var autocompleteProvider: AutocompleteProvider?
+    var autocompleteList: SelectList?
+    var isAutocompleting = false
+    var autocompletePrefix = ""
 
     // Large pastes are stored and replaced by markers until submit, mirroring pi-tui.
-    private var pastes: [Int: String] = [:]
-    private var pasteCounter = 0
+    var pastes: [Int: String] = [:]
+    var pasteCounter = 0
+
+    // Store last render width for cursor navigation + history rules.
+    var lastWidth: Int = 80
+
+    // Prompt history for up/down navigation (pi-mono parity).
+    var history: [String] = []
+    var historyIndex: Int = -1 // -1 = not browsing, 0 = most recent, 1 = older, etc.
 
     public var disableSubmit = false
     public var onSubmit: ((String) -> Void)?
@@ -53,10 +70,10 @@ public final class Editor: Component {
     }
 
     public func render(width: Int) -> [String] {
+        self.lastWidth = width
         let horizontal = self.theme.borderColor(String(repeating: "─", count: width))
         var result: [String] = [horizontal]
-        let layoutLines = self.layout(width: width)
-        result.append(contentsOf: layoutLines)
+        result.append(contentsOf: self.renderContent(width: width))
         result.append(horizontal)
         if self.isAutocompleting, let list = autocompleteList {
             result.append(contentsOf: list.render(width: width))
@@ -78,6 +95,7 @@ public final class Editor: Component {
     }
 
     public func setText(_ text: String) {
+        self.historyIndex = -1 // exit history browsing mode
         self.buffer.setText(text)
         self.onChange?(self.getText())
     }
@@ -86,45 +104,92 @@ public final class Editor: Component {
         self.buffer.text
     }
 
-    private func layout(width: Int) -> [String] {
-        var lines: [String] = []
-        for (index, line) in self.buffer.lines.enumerated() {
-            if line.count <= width {
-                lines.append(self.renderLine(line: line, cursorLine: index))
-            } else {
-                var position = 0
-                while position < line.count {
-                    let end = min(line.count, position + width)
-                    let chunkStart = line.index(line.startIndex, offsetBy: position)
-                    let chunkEnd = line.index(line.startIndex, offsetBy: end)
-                    let chunk = String(line[chunkStart..<chunkEnd])
-                    lines.append(self.renderLine(line: chunk, cursorLine: index, offset: position))
-                    position += width
-                }
-            }
-        }
-        if lines.isEmpty {
-            lines.append(self.renderLine(line: "", cursorLine: 0))
-        }
-        return lines
+    // MARK: - History + cursor movement helpers (pi-mono parity)
+
+    private func isEditorEmpty() -> Bool {
+        self.buffer.lines.count == 1 && self.buffer.lines[0].isEmpty
     }
 
-    private func renderLine(line: String, cursorLine: Int, offset: Int = 0) -> String {
-        if cursorLine == self.buffer.cursorLine,
-           self.buffer.cursorCol >= offset,
-           self.buffer.cursorCol <= offset + line.count
-        {
-            let relative = self.buffer.cursorCol - offset
-            let idx = line.index(line.startIndex, offsetBy: min(max(relative, 0), line.count))
-            var rendered = line
-            if relative < line.count {
-                rendered.replaceSubrange(idx...idx, with: "\u{001B}[7m\(line[idx])\u{001B}[0m")
-            } else {
-                rendered.append("\u{001B}[7m \u{001B}[0m")
-            }
-            return rendered
+    private func navigateHistory(_ direction: Int) {
+        guard !self.history.isEmpty else { return }
+        guard direction == -1 || direction == 1 else { return }
+
+        let newIndex = self.historyIndex - direction
+        guard newIndex >= -1, newIndex < self.history.count else { return }
+
+        self.historyIndex = newIndex
+        let text = self.historyIndex == -1 ? "" : (self.history[self.historyIndex])
+        self.buffer.setText(text)
+        self.onChange?(self.getText())
+    }
+
+    private func moveCursorVisual(deltaLine: Int) {
+        let moved = EditorLayoutEngine.moveCursorVertically(
+            lines: self.buffer.lines,
+            width: self.lastWidth,
+            cursorLine: self.buffer.cursorLine,
+            cursorCol: self.buffer.cursorCol,
+            deltaLine: deltaLine)
+
+        self.buffer = self.withMutatingBuffer { buf in
+            buf.cursorLine = moved.line
+            buf.cursorCol = moved.col
         }
-        return line
+    }
+
+    private func moveCursorHorizontal(deltaCol: Int) {
+        let moved = EditorLayoutEngine.moveCursorHorizontally(
+            lines: self.buffer.lines,
+            cursorLine: self.buffer.cursorLine,
+            cursorCol: self.buffer.cursorCol,
+            deltaCol: deltaCol)
+
+        self.buffer = self.withMutatingBuffer { buf in
+            buf.cursorLine = moved.line
+            buf.cursorCol = moved.col
+        }
+    }
+
+    private func isOnFirstVisualLine() -> Bool {
+        EditorLayoutEngine.isOnFirstVisualLine(
+            lines: self.buffer.lines,
+            width: self.lastWidth,
+            cursorLine: self.buffer.cursorLine,
+            cursorCol: self.buffer.cursorCol)
+    }
+
+    private func isOnLastVisualLine() -> Bool {
+        EditorLayoutEngine.isOnLastVisualLine(
+            lines: self.buffer.lines,
+            width: self.lastWidth,
+            cursorLine: self.buffer.cursorLine,
+            cursorCol: self.buffer.cursorCol)
+    }
+
+    private func renderContent(width: Int) -> [String] {
+        EditorLayoutEngine.renderContent(
+            lines: self.buffer.lines,
+            cursorLine: self.buffer.cursorLine,
+            cursorCol: self.buffer.cursorCol,
+            width: width)
+    }
+
+    public func getLines() -> [String] {
+        Array(self.buffer.lines)
+    }
+
+    public func getCursor() -> CursorPosition {
+        CursorPosition(line: self.buffer.cursorLine, col: self.buffer.cursorCol)
+    }
+
+    public func addToHistory(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if let first = self.history.first, first == trimmed { return }
+        self.history.insert(trimmed, at: 0)
+        if self.history.count > 100 {
+            self.history.removeLast(self.history.count - 100)
+        }
     }
 
     // swiftlint:disable cyclomatic_complexity
@@ -158,32 +223,44 @@ public final class Editor: Component {
         case .escape:
             self.cancelAutocomplete()
         case .backspace:
+            self.historyIndex = -1
             if modifiers.contains(.option) {
                 self.deleteWordBackwards()
             } else {
                 self.backspace()
             }
         case .delete:
+            self.historyIndex = -1
             if modifiers.contains(.option) {
                 self.deleteWordForward()
             } else {
                 self.deleteForward()
             }
         case .arrowUp:
-            self.moveCursor(lineDelta: -1, columnDelta: 0)
+            if self.isEditorEmpty() {
+                self.navigateHistory(-1)
+            } else if self.historyIndex > -1, self.isOnFirstVisualLine() {
+                self.navigateHistory(-1)
+            } else {
+                self.moveCursorVisual(deltaLine: -1)
+            }
         case .arrowDown:
-            self.moveCursor(lineDelta: 1, columnDelta: 0)
+            if self.historyIndex > -1, self.isOnLastVisualLine() {
+                self.navigateHistory(1)
+            } else {
+                self.moveCursorVisual(deltaLine: 1)
+            }
         case .arrowLeft:
             if modifiers.contains(.option) || modifiers.contains(.control) {
                 self.moveByWord(-1)
             } else {
-                self.moveCursor(lineDelta: 0, columnDelta: -1)
+                self.moveCursorHorizontal(deltaCol: -1)
             }
         case .arrowRight:
             if modifiers.contains(.option) || modifiers.contains(.control) {
                 self.moveByWord(1)
             } else {
-                self.moveCursor(lineDelta: 0, columnDelta: 1)
+                self.moveCursorHorizontal(deltaCol: 1)
             }
         case .home:
             self.buffer = self.withMutatingBuffer { buf in buf.moveToLineStart() }
@@ -193,10 +270,13 @@ public final class Editor: Component {
             if modifiers.contains(.control) {
                 switch char.lowercased() {
                 case "u":
+                    self.historyIndex = -1
                     self.deleteToStartOfLine()
                 case "k":
+                    self.historyIndex = -1
                     self.deleteToEndOfLine()
                 case "w":
+                    self.historyIndex = -1
                     self.deleteWordBackwards()
                 case "a":
                     self.buffer = self.withMutatingBuffer { buf in buf.moveToLineStart() }
@@ -216,6 +296,7 @@ public final class Editor: Component {
     // swiftlint:enable cyclomatic_complexity
 
     private func insertCharacter(_ character: String) {
+        self.historyIndex = -1
         self.buffer = self.withMutatingBuffer { buf in buf.insertCharacter(character) }
         self.onChange?(self.getText())
         if !self.isAutocompleting {
@@ -263,6 +344,8 @@ public final class Editor: Component {
         self.buffer = EditorBuffer()
         self.pastes.removeAll()
         self.pasteCounter = 0
+        self.historyIndex = -1
+        self.addToHistory(text)
         self.onChange?("")
         self.onSubmit?(text)
     }
@@ -302,6 +385,7 @@ public final class Editor: Component {
     }
 
     private func handlePaste(_ text: String) {
+        self.historyIndex = -1
         let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         let spacesExpanded = normalized.replacingOccurrences(of: "\t", with: "    ")
         var sanitized = spacesExpanded.reduce(into: "") { partial, char in
@@ -371,135 +455,8 @@ public final class Editor: Component {
         self.onChange?(self.getText())
     }
 
-    private func triggerAutocomplete(explicit: Bool) {
-        guard let provider = autocompleteProvider else { return }
-        if explicit, !provider.shouldTriggerFileCompletion(
-            lines: self.buffer.lines,
-            cursorLine: self.buffer.cursorLine,
-            cursorCol: self.buffer.cursorCol)
-        {
-            return
-        }
-        let suggestion = provider.getSuggestions(
-            lines: self.buffer.lines,
-            cursorLine: self.buffer.cursorLine,
-            cursorCol: self.buffer.cursorCol)
-        if let suggestion {
-            self.presentAutocomplete(provider: provider, suggestion: suggestion)
-        } else {
-            self.cancelAutocomplete()
-        }
-    }
-
-    private func updateAutocomplete() {
-        guard let provider = autocompleteProvider, isAutocompleting else { return }
-        let suggestion = provider.getSuggestions(
-            lines: self.buffer.lines,
-            cursorLine: self.buffer.cursorLine,
-            cursorCol: self.buffer.cursorCol)
-        if let suggestion {
-            self.presentAutocomplete(provider: provider, suggestion: suggestion)
-        } else {
-            self.cancelAutocomplete()
-        }
-    }
-
-    private func cancelAutocomplete() {
-        self.isAutocompleting = false
-        self.autocompleteList = nil
-        self.autocompletePrefix = ""
-    }
-
-    private func applySelectedAutocompleteItem() {
-        guard let provider = autocompleteProvider,
-              let list = autocompleteList,
-              let selected = list.selectedItem()
-        else {
-            self.cancelAutocomplete()
-            return
-        }
-        let autocompleteItem = AutocompleteItem(
-            value: selected.value,
-            label: selected.label,
-            description: selected.description)
-        let result = provider.applyCompletion(
-            lines: self.buffer.lines,
-            cursorLine: self.buffer.cursorLine,
-            cursorCol: self.buffer.cursorCol,
-            item: autocompleteItem,
-            prefix: self.autocompletePrefix)
-        self.buffer = self.withMutatingBuffer { buf in
-            buf.lines = result.lines
-            buf.cursorLine = result.cursorLine
-            buf.cursorCol = result.cursorCol
-        }
-        self.cancelAutocomplete()
-        self.onChange?(self.getText())
-    }
-
-    private func handleTabCompletion() {
-        guard self.autocompleteProvider != nil else { return }
-        let currentLine = self.buffer.lines[self.buffer.cursorLine]
-        let cursorIndex = currentLine.index(
-            currentLine.startIndex,
-            offsetBy: min(self.buffer.cursorCol, currentLine.count))
-        let beforeCursor = String(currentLine[..<cursorIndex])
-        if beforeCursor.trimmingCharacters(in: .whitespaces).hasPrefix("/") {
-            self.handleSlashCommandCompletion()
-        } else {
-            self.forceFileAutocomplete()
-        }
-    }
-
-    private func handleSlashCommandCompletion() {
-        self.triggerAutocomplete(explicit: true)
-    }
-
-    private func forceFileAutocomplete() {
-        guard let provider = autocompleteProvider else { return }
-        if let suggestion = provider.forceFileSuggestions(
-            lines: self.buffer.lines,
-            cursorLine: self.buffer.cursorLine,
-            cursorCol: self.buffer.cursorCol)
-        {
-            self.presentAutocomplete(provider: provider, suggestion: suggestion)
-        } else {
-            self.triggerAutocomplete(explicit: true)
-        }
-    }
-
-    private func presentAutocomplete(provider: AutocompleteProvider, suggestion: AutocompleteSuggestion) {
-        self.autocompletePrefix = suggestion.prefix
-        self.autocompleteList = SelectList(
-            items: suggestion.items
-                .map { SelectItem(value: $0.value, label: $0.label, description: $0.description) },
-            maxVisible: 5,
-            theme: self.theme.selectList)
-        self.autocompleteList?.onSelect = { [weak self] selected in
-            guard let self else { return }
-            let result = provider.applyCompletion(
-                lines: self.buffer.lines,
-                cursorLine: self.buffer.cursorLine,
-                cursorCol: self.buffer.cursorCol,
-                item: AutocompleteItem(
-                    value: selected.value,
-                    label: selected.label,
-                    description: selected.description),
-                prefix: self.autocompletePrefix)
-            self.buffer = self.withMutatingBuffer { buf in
-                buf.lines = result.lines
-                buf.cursorLine = result.cursorLine
-                buf.cursorCol = result.cursorCol
-            }
-            self.cancelAutocomplete()
-            self.onChange?(self.getText())
-        }
-        self.autocompleteList?.onCancel = { [weak self] in self?.cancelAutocomplete() }
-        self.isAutocompleting = true
-    }
-
     /// Helper to mutate the value-type buffer while keeping `Editor` reference semantics.
-    private func withMutatingBuffer(_ mutate: (inout EditorBuffer) -> Void) -> EditorBuffer {
+    func withMutatingBuffer(_ mutate: (inout EditorBuffer) -> Void) -> EditorBuffer {
         var copy = self.buffer
         mutate(&copy)
         return copy

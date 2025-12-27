@@ -99,4 +99,29 @@ struct AutocompleteFileTests {
         }
         #expect(items.contains(where: { $0.value.contains("hello.txt") }))
     }
+
+    @Test
+    func forceFileSuggestionsExtractsSlashPrefix() throws {
+        let provider = CombinedAutocompleteProvider(basePath: "/tmp")
+
+        let lines = ["hey /"]
+        let result = provider.forceFileSuggestions(lines: lines, cursorLine: 0, cursorCol: 5)
+        #expect(result?.prefix == "/")
+    }
+
+    @Test
+    func forceFileSuggestionsDoesNotTriggerForSlashCommandItself() throws {
+        let provider = CombinedAutocompleteProvider(basePath: "/tmp")
+        let lines = ["/model"]
+        let result = provider.forceFileSuggestions(lines: lines, cursorLine: 0, cursorCol: 6)
+        #expect(result == nil)
+    }
+
+    @Test
+    func forceFileSuggestionsTriggersForSlashCommandArgument() throws {
+        let provider = CombinedAutocompleteProvider(basePath: "/tmp")
+        let lines = ["/command /"]
+        let result = provider.forceFileSuggestions(lines: lines, cursorLine: 0, cursorCol: 10)
+        #expect(result?.prefix == "/")
+    }
 }

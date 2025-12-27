@@ -7,8 +7,10 @@ All notable changes to this project will be documented in this file.
 - Sync pi-mono keyboard handling: enable Kitty keyboard protocol, parse CSI-u sequences, and keep `.raw` input events opt-in (debug-only).
 - Input: add common readline-style shortcuts (Ctrl+A/E/U/K/W) plus word navigation/deletion; ignore raw escape sequences.
 - Editor: Ctrl+W word deletion now matches whitespace/punctuation run semantics; file-path pastes auto-prepend a safety space when needed.
+- Editor: prompt history navigation (Up/Down), public cursor/lines accessors, and grapheme + display-width aware wrapping/cursor rendering; more tests.
 - Add `Box`, `SettingsList`, and `Image` components (pi-mono parity) with tests.
 - Add terminal image support (`TerminalImage`) for kitty + iTerm2, including image dimension sniffers (png/jpeg/gif/webp).
+- Markdown: render tables width-aware (top/bottom borders, aligned columns, wrapped cell content) and style inline code like pi-mono; more tests.
 - TUI: query terminal cell pixel size (CSI `16t`) and handle responses via `.terminalCellSize` input events.
 - TUI: partial diff renderer clears each line (CSI `2K`) and clears trailing old lines; image escape lines skip width preconditions.
 - Rendering math: `Ansi.stripCodes` ignores kitty/iTerm2 image escape sequences so `VisibleWidth` stays correct.

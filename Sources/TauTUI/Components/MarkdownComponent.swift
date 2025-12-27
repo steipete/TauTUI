@@ -89,7 +89,7 @@ public final class MarkdownComponent: Component {
             heading: AnsiStyling.color(36),
             link: { AnsiStyling.color(34)(AnsiStyling.underline($0)) },
             linkUrl: { "\u{001B}[90m\($0)\u{001B}[0m" },
-            code: AnsiStyling.color(36),
+            code: AnsiStyling.color(33),
             codeBlock: AnsiStyling.color(32),
             codeBlockBorder: { "\u{001B}[90m\($0)\u{001B}[0m" },
             quote: AnsiStyling.italic,
@@ -310,30 +310,83 @@ private final class Renderer {
     }
 
     private func renderTable(_ table: Table) {
-        let columnCount = table.columnAlignments.count
-        var widths = Array(repeating: 0, count: max(columnCount, 1))
+        let headCells = Array(table.head.cells)
+        let numCols = headCells.count
+        guard numCols > 0 else { return }
         let alignments = table.columnAlignments
 
+        // Border overhead for: "│ " + (n-1) * " │ " + " │" = 3n + 1
+        let borderOverhead = 3 * numCols + 1
+        let minTableWidth = borderOverhead + numCols // at least 1 char per column
+
+        if self.maxWidth < minTableWidth {
+            self.wrap(line: table.format())
+            self.lines.append("")
+            return
+        }
+
+        func wrapCellText(_ text: String, maxWidth: Int) -> [String] {
+            AnsiWrapping.wrapText(text, width: max(1, maxWidth))
+        }
+
+        var naturalWidths = Array(repeating: 0, count: numCols)
+
         func measure(cells: [Table.Cell]) {
-            for (index, cell) in cells.enumerated() {
-                guard index < widths.count else { continue }
+            for (index, cell) in cells.enumerated() where index < numCols {
                 let text = self.renderInline(cell.inlineChildren)
-                widths[index] = min(max(widths[index], VisibleWidth.measure(text)), self.maxWidth)
+                naturalWidths[index] = max(naturalWidths[index], VisibleWidth.measure(text))
             }
         }
 
-        measure(cells: Array(table.head.cells))
+        measure(cells: headCells)
         table.body.rows.forEach { measure(cells: Array($0.cells)) }
 
-        func renderRow(cells: [Table.Cell]) {
-            var line = "│ "
-            for (index, cell) in cells.enumerated() {
-                guard index < widths.count else { continue }
-                let text = self.renderInline(cell.inlineChildren)
+        let totalNaturalWidth = naturalWidths.reduce(0, +) + borderOverhead
+        let columnWidths: [Int]
+
+        if totalNaturalWidth <= self.maxWidth {
+            columnWidths = naturalWidths
+        } else {
+            let availableForCells = self.maxWidth - borderOverhead
+            let totalNatural = max(1, naturalWidths.reduce(0, +))
+
+            var widths = naturalWidths.map { w in
+                let proportion = Double(w) / Double(totalNatural)
+                return max(1, Int((proportion * Double(availableForCells)).rounded(.down)))
+            }
+
+            let allocated = widths.reduce(0, +)
+            var remaining = max(0, availableForCells - allocated)
+            var i = 0
+            while remaining > 0, i < numCols {
+                widths[i] += 1
+                remaining -= 1
+                i += 1
+            }
+
+            columnWidths = widths
+        }
+
+        func horizontal(_ left: String, _ mid: String, _ right: String) -> String {
+            let cells = columnWidths.map { String(repeating: "─", count: $0) }
+            return left + "─" + cells.joined(separator: "─" + mid + "─") + "─" + right
+        }
+
+        self.lines.append(horizontal("┌", "┬", "┐"))
+
+        let headerCellLines: [[String]] = headCells.enumerated().map { i, cell in
+            let text = self.renderInline(cell.inlineChildren)
+            return wrapCellText(text, maxWidth: columnWidths[i])
+        }
+        let headerLineCount = headerCellLines.map(\.count).max() ?? 1
+
+        for lineIndex in 0..<headerLineCount {
+            let parts: [String] = headerCellLines.enumerated().map { col, lines in
+                let text = lineIndex < lines.count ? lines[lineIndex] : ""
                 let vis = VisibleWidth.measure(text)
-                let padding = max(0, widths[index] - vis)
-                let alignment: Table.ColumnAlignment = if index < alignments.count {
-                    alignments[index] ?? .left
+                let padding = max(0, columnWidths[col] - vis)
+                let alignment: Table.ColumnAlignment = if col < alignments.count {
+                    alignments[col] ?? .left
                 } else {
                     .left
                 }
@@ -351,16 +404,53 @@ private final class Renderer {
                     rightPad = padding
                 }
 
-                line += String(repeating: " ", count: leftPad) + text + String(repeating: " ", count: rightPad)
-                line += index == widths.count - 1 ? " │" : " │ "
+                let padded = String(repeating: " ", count: leftPad) + text + String(repeating: " ", count: rightPad)
+                return self.theme.bold(padded)
             }
-            self.lines.append(line)
+            self.lines.append("│ " + parts.joined(separator: " │ ") + " │")
         }
 
-        renderRow(cells: Array(table.head.cells))
-        let separators = widths.map { String(repeating: "─", count: max(1, $0)) }
-        self.lines.append("├─" + separators.joined(separator: "─┼─") + "─┤")
-        table.body.rows.forEach { renderRow(cells: Array($0.cells)) }
+        self.lines.append(horizontal("├", "┼", "┤"))
+
+        for row in table.body.rows {
+            let cells = Array(row.cells)
+            let rowCellLines: [[String]] = cells.enumerated().map { i, cell in
+                let text = self.renderInline(cell.inlineChildren)
+                return wrapCellText(text, maxWidth: columnWidths[i])
+            }
+            let rowLineCount = rowCellLines.map(\.count).max() ?? 1
+
+            for lineIndex in 0..<rowLineCount {
+                let parts: [String] = rowCellLines.enumerated().map { col, lines in
+                    let text = lineIndex < lines.count ? lines[lineIndex] : ""
+                    let vis = VisibleWidth.measure(text)
+                    let padding = max(0, columnWidths[col] - vis)
+                    let alignment: Table.ColumnAlignment = if col < alignments.count {
+                        alignments[col] ?? .left
+                    } else {
+                        .left
+                    }
+
+                    let (leftPad, rightPad): (Int, Int)
+                    switch alignment {
+                    case .center:
+                        leftPad = padding / 2
+                        rightPad = padding - leftPad
+                    case .right:
+                        leftPad = padding
+                        rightPad = 0
+                    default:
+                        leftPad = 0
+                        rightPad = padding
+                    }
+
+                    return String(repeating: " ", count: leftPad) + text + String(repeating: " ", count: rightPad)
+                }
+                self.lines.append("│ " + parts.joined(separator: " │ ") + " │")
+            }
+        }
+
+        self.lines.append(horizontal("└", "┴", "┘"))
         self.lines.append("")
     }
 

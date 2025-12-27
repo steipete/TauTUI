@@ -11,9 +11,10 @@ Context: upstream `pi-mono` checkout lives at `../../pi-mono` (`/Users/steipete/
 
 ## TauTUI sync status
 - `ProcessTerminal`: enables Kitty keyboard protocol, parses CSI-u sequences, maps Escape; `.raw` input events are opt-in (debug-only).
-- `Input`/`Editor`: readline-style word motion + deletion parity; paste safety-space for file paths; tests added.
+- `Input`/`Editor`: readline-style word motion + deletion parity; prompt history navigation (Up/Down); paste safety-space for file paths; tests added.
 - `Box` + `SettingsList`: Swift ports aligned with pi-mono APIs; tests added.
 - `TerminalImage` + `Image`: kitty/iTerm2 encoding + image dimension sniffers (png/jpeg/gif/webp); `TUI` queries + applies cell size; tests added.
+- `Markdown`: tables are width-aware (┌┐/└┘ borders), aligned, and wrap long/styled cell content via ANSI-aware wrapping; tests added.
 - `TUI`: partial diff clears each line (CSI `2K`) and clears trailing old lines; skips width precondition for image escape lines.
 
 # pi-tui sync log (Nov 18–21, 2025)

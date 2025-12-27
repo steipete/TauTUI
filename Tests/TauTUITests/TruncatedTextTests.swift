@@ -38,4 +38,21 @@ struct TruncatedTextTests {
         #expect(lines.count == 1)
         #expect(lines[0].contains("Second") == false)
     }
+
+    @Test
+    func handlesEmptyText() async throws {
+        let text = TruncatedText(text: "", paddingX: 1, paddingY: 0)
+        let lines = text.render(width: 30)
+        #expect(lines.count == 1)
+        #expect(VisibleWidth.measure(lines[0]) == 30)
+    }
+
+    @Test
+    func fitsExactlyWithoutEllipsis() async throws {
+        let text = TruncatedText(text: "Hello world", paddingX: 1, paddingY: 0)
+        let lines = text.render(width: 30)
+        #expect(lines.count == 1)
+        #expect(VisibleWidth.measure(lines[0]) == 30)
+        #expect(!lines[0].contains("..."))
+    }
 }

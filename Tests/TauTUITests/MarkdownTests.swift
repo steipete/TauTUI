@@ -95,4 +95,68 @@ struct MarkdownTests {
         let rendered = component.render(width: 20)
         #expect(rendered.contains(where: { $0.contains("\u{001B}[38;2;10;20;30m") }))
     }
+
+    @Test
+    func wrapsLongUnbrokenTokensInsideTableCells() async throws {
+        let url = "https://example.com/this/is/a/very/long/url/that/should/wrap"
+        let source = """
+        | Value |
+        | --- |
+        | prefix \(url) |
+        """
+        let width = 30
+        let component = MarkdownComponent(text: source, padding: .init(horizontal: 0, vertical: 0))
+        let lines = component.render(width: width)
+        let plain = lines.map { Ansi.stripCodes($0).trimmingCharacters(in: .whitespaces) }
+
+        for line in plain {
+            #expect(VisibleWidth.measure(line) <= width)
+        }
+
+        let tableLines = plain.filter { $0.hasPrefix("│") }
+        for line in tableLines {
+            let borderCount = line.filter { $0 == "│" }.count
+            #expect(borderCount == 2)
+        }
+
+        let extracted = plain.joined().replacingOccurrences(of: "│", with: "")
+            .replacingOccurrences(of: "─", with: "")
+            .replacingOccurrences(of: " ", with: "")
+        #expect(extracted.contains("prefix"))
+        #expect(extracted.contains(url))
+    }
+
+    @Test
+    func wrapsStyledInlineCodeInsideTableCells() async throws {
+        let source = """
+        | Code |
+        | --- |
+        | `averyveryveryverylongidentifier` |
+        """
+        let width = 20
+        let component = MarkdownComponent(text: source, padding: .init(horizontal: 0, vertical: 0))
+        let lines = component.render(width: width)
+        #expect(lines.joined(separator: "\n").contains("\u{001B}[33m"))
+
+        let plain = lines.map { Ansi.stripCodes($0).trimmingCharacters(in: .whitespaces) }
+        for line in plain {
+            #expect(VisibleWidth.measure(line) <= width)
+        }
+    }
+
+    @Test
+    func extremelyNarrowTableDoesNotCrash() async throws {
+        let source = """
+        | A | B | C |
+        | --- | --- | --- |
+        | 1 | 2 | 3 |
+        """
+        let width = 15
+        let component = MarkdownComponent(text: source, padding: .init(horizontal: 0, vertical: 0))
+        let plain = component.render(width: width).map { Ansi.stripCodes($0).trimmingCharacters(in: .whitespaces) }
+        #expect(!plain.isEmpty)
+        for line in plain {
+            #expect(VisibleWidth.measure(line) <= width)
+        }
+    }
 }
