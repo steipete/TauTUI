@@ -1,5 +1,11 @@
 import Dispatch
 
+#if os(Linux)
+import Glibc
+#else
+import Darwin
+#endif
+
 /// Main runtime responsible for differential rendering and input routing.
 @MainActor
 public final class TUI: Container {
@@ -12,6 +18,12 @@ public final class TUI: Container {
     private var previousWidth: Int = 0
     private var cursorRow: Int = 0
     private var renderRequested = false
+
+    /// Called when Ctrl+C is received. If unset, Ctrl+C will stop the terminal and call `exit(0)`.
+    public var onControlC: (@MainActor @Sendable () -> Void)?
+
+    /// When true (default), Ctrl+C is intercepted before forwarding input to the focused component.
+    public var handlesControlC: Bool = true
 
     public init(terminal: Terminal, renderScheduler: ((@MainActor @Sendable @escaping () -> Void) -> Void)? = nil) {
         self.terminal = terminal
@@ -60,19 +72,21 @@ public final class TUI: Container {
     // MARK: - Input
 
     private func handleInput(_ input: TerminalInput) {
-        self._handleInput(input)
-        self.requestRender()
-    }
-    
-    private func _handleInput(_ input: TerminalInput) {
-        switch input {
-        case .key(.character("c"), let modifiers):
-            if modifiers.contains(.control) {
+        if self.handlesControlC,
+           case let .key(.character("c"), modifiers) = input,
+           modifiers.contains(.control)
+        {
+            if let onControlC = self.onControlC {
+                onControlC()
+            } else {
+                self.stop()
                 exit(0)
             }
-        default:
-            self.focusedComponent?.handle(input: input)
+            return
         }
+
+        self.focusedComponent?.handle(input: input)
+        self.requestRender()
     }
 
     // MARK: - Rendering
