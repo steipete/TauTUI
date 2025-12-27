@@ -71,12 +71,12 @@ public protocol Terminal: AnyObject {
     func clearScreen()
 }
 ```
-`TerminalInput` will be an enum representing parsed key events (see §10), though `ProcessTerminal` will still surface raw bytes for advanced consumers.
+`TerminalInput` will be an enum representing parsed key events (see §10). `ProcessTerminal` can optionally surface raw bytes for debugging via `emitsRawInputEvents`.
 
 ### 6.2 `ProcessTerminal`
 - Uses `swift-system` for file descriptors, `termios` for raw-mode toggling, and DispatchSources for stdin reads + SIGWINCH.
-- Automatically enables/disables bracketed paste (`ESC[?2004h/l`).
-- Converts byte streams into normalized `TerminalInput` key events, decoding CSI modifier codes (Shift/Ctrl/Option/Meta) and Meta-prefix sequences (ESC+key). Components receive option-aware arrows/backspace/delete for word motions/deletions without parsing escapes themselves. Raw data is still surfaced for advanced consumers (Editor paste markers).
+- Automatically enables/disables bracketed paste (`ESC[?2004h/l`) and Kitty keyboard protocol (`ESC[>1u` / `ESC[<u`).
+- Converts byte streams into normalized `TerminalInput` key events, decoding CSI modifier codes (Shift/Ctrl/Option/Meta) and Meta-prefix sequences (ESC+key). Components receive option-aware arrows/backspace/delete for word motions/deletions without parsing escapes themselves.
 
 ### 6.3 `VirtualTerminal`
 - Lives under `Sources/TauTUI/Terminal` but compiled only for tests via `@testable import`.
@@ -112,6 +112,7 @@ public protocol Terminal: AnyObject {
   - `AutocompleteController`: wraps `AutocompleteProvider`, handles Tab triggers, slash command detection, forced file completion, `SelectList` overlay.
 - Rendering: draw horizontal lines (chalk gray equivalent) above/below; show fake cursor via reverse video; append autocomplete list when active (reusing `SelectList` rendering output).
 - Input pipeline replicates pi-tui order: bracketed paste start/end, autocomplete keys, Tab logic, control shortcuts (Ctrl+A/E/K/U/W, Option+Backspace, Shift+Enter combos), newline vs submit decision, backspace/delete/arrow keys, printable Unicode insertion (charCode ≥ 0x20).
+- Input pipeline replicates pi-tui order: paste events, autocomplete keys, Tab logic, control shortcuts (Ctrl+A/E/K/U/W, Option+Backspace, Shift+Enter combos), newline vs submit decision, backspace/delete/arrow keys, printable Unicode insertion (charCode ≥ 0x20).
 - Public API:
   ```swift
   final class Editor: Component {
