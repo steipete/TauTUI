@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Add terminal image support (`TerminalImage`) for kitty + iTerm2, including image dimension sniffers (png/jpeg/gif/webp).
 - TUI: query terminal cell pixel size (CSI `16t`) and handle responses via `.terminalCellSize` input events.
 - TUI: partial diff renderer clears each line (CSI `2K`) and clears trailing old lines; image escape lines skip width preconditions.
+- Rendering math: `Ansi.stripCodes` ignores kitty/iTerm2 image escape sequences so `VisibleWidth` stays correct.
 
 ## [0.1.4] - 2025-11-21
 - Added golden snapshots for TTYSampler scenarios (select, markdown, markdown tables) under `Tests/Fixtures/TTY`, with tests that replay scripts for visual regressions.
