@@ -63,4 +63,17 @@ struct InputTests {
         input.handle(input: .key(.backspace, modifiers: [.option]))
         #expect(input.value == "hello ")
     }
+
+    @Test
+    func ctrlLeftRightMovesByWord() async throws {
+        let input = Input(value: "hello world")
+
+        input.handle(input: .key(.arrowLeft, modifiers: [.control]))
+        input.handle(input: .key(.character("X")))
+        #expect(input.value == "hello Xworld")
+
+        input.handle(input: .key(.arrowRight, modifiers: [.control]))
+        input.handle(input: .key(.character("Y")))
+        #expect(input.value == "hello XworldY")
+    }
 }

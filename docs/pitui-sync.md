@@ -1,3 +1,16 @@
+# pi-tui sync log (Dec 27, 2025)
+
+Context: upstream `pi-mono` checkout lives at `../../pi-mono` (`/Users/steipete/Projects/pi-mono`) relative to this repo. Current head inspected: `origin/main` at `04fa79e` as of **2025-12-27**. `packages/tui/CHANGELOG.md` latest entry: **0.29.0 (2025-12-25)**.
+
+## Notable upstream changes (TUI)
+- Auto-space before pasted file paths (prefix `/`, `~`, `.`) when cursor is after a word char.
+- Input: Ctrl+Left/Right + Alt+Left/Right word navigation; Ctrl+W readline-style deletion; full Unicode input.
+- Terminal: Kitty keyboard protocol support (CSI `...u` sequences) and more robust escape/lock-bit handling.
+
+## TauTUI sync status
+- `ProcessTerminal`: enables Kitty keyboard protocol, parses CSI-u sequences, maps Escape; `.raw` input events are opt-in (debug-only).
+- `Input`/`Editor`: readline-style word motion + deletion parity; paste safety-space for file paths; tests added.
+
 # pi-tui sync log (Nov 18–21, 2025)
 
 Context: upstream `pi-mono` checkout lives at `../../pi-mono` (`/Users/steipete/Projects/pi-mono`) relative to this repo. Prior sync covered commits through `ed53fce` (v0.7.13) dated 2025-11-16. Current head inspected: `origin/main` at `45ffe0a` (tags v0.8.0/v0.8.1/v0.8.2) as of **2025-11-21**.

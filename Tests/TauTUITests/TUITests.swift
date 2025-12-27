@@ -158,4 +158,11 @@ struct TUIRenderingTests {
         #expect(events
             .contains(where: { if case let .key(.backspace, m) = $0 { return m.contains(.option) }; return false }))
     }
+
+    @Test
+    func keyEventNormalization_lineFeedTreatsAsEnter() throws {
+        let parser = ProcessTerminal()
+        let events = parser.parseForTests("\n")
+        #expect(events.contains(where: { if case .key(.enter, _) = $0 { return true }; return false }))
+    }
 }

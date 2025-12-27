@@ -172,13 +172,13 @@ public final class Editor: Component {
         case .arrowDown:
             self.moveCursor(lineDelta: 1, columnDelta: 0)
         case .arrowLeft:
-            if modifiers.contains(.option) {
+            if modifiers.contains(.option) || modifiers.contains(.control) {
                 self.moveByWord(-1)
             } else {
                 self.moveCursor(lineDelta: 0, columnDelta: -1)
             }
         case .arrowRight:
-            if modifiers.contains(.option) {
+            if modifiers.contains(.option) || modifiers.contains(.control) {
                 self.moveByWord(1)
             } else {
                 self.moveCursor(lineDelta: 0, columnDelta: 1)

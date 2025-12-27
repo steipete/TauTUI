@@ -310,7 +310,7 @@ public final class ProcessTerminal: Terminal {
         case 0x0D:
             self.emitKey(.enter)
         case 0x0A:
-            self.emitKey(.character("\n"))
+            self.emitKey(.enter)
         case 0x09:
             self.emitKey(.tab)
         case 0x7F, 0x08:

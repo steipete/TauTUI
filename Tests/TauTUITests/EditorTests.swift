@@ -165,6 +165,20 @@ struct EditorTests {
     }
 
     @Test
+    func ctrlLeftRightMovesByWord() async throws {
+        let editor = Editor()
+        editor.setText("hello world")
+
+        editor.handle(input: .key(.arrowLeft, modifiers: [.control]))
+        editor.handle(input: .key(.character("X")))
+        #expect(editor.getText() == "hello Xworld")
+
+        editor.handle(input: .key(.arrowRight, modifiers: [.control]))
+        editor.handle(input: .key(.character("Y")))
+        #expect(editor.getText() == "hello XworldY")
+    }
+
+    @Test
     func optionDeleteForwardDeletesWord() async throws {
         let editor = Editor()
         editor.setText("hello world")
