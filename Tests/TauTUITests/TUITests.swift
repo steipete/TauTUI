@@ -9,6 +9,16 @@ private final class DummyComponent: Component {
     func render(width: Int) -> [String] { self.lines }
 }
 
+private final class CapturingInputComponent: Component {
+    private(set) var inputs: [TerminalInput] = []
+
+    func render(width: Int) -> [String] { [""] }
+
+    func handle(input: TerminalInput) {
+        self.inputs.append(input)
+    }
+}
+
 @Suite("TUI Rendering")
 struct TUIRenderingTests {
     @MainActor @Test
@@ -52,6 +62,47 @@ struct TUIRenderingTests {
         #expect(last.contains("swift"))
         #expect(!last.contains("\u{001B}[3J"))
         #expect(last.contains("\u{001B}[?2026h"))
+    }
+
+    @MainActor @Test
+    func controlCInvokesHandlerAndSkipsFocusedComponent() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        let tui = TUI(terminal: terminal, renderScheduler: { $0() })
+        let component = CapturingInputComponent()
+        tui.addChild(component)
+        tui.setFocus(component)
+
+        var called = false
+        tui.onControlC = {
+            called = true
+            tui.stop()
+        }
+
+        try tui.start()
+        terminal.sendInput(.key(.character("c"), modifiers: [.control]))
+
+        #expect(called)
+        #expect(component.inputs.isEmpty)
+        #expect(terminal.outputLog.contains("\u{001B}[?25h"))
+    }
+
+    @MainActor @Test
+    func controlCCanBeForwardedToFocusedComponent() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        let tui = TUI(terminal: terminal, renderScheduler: { $0() })
+        let component = CapturingInputComponent()
+        tui.addChild(component)
+        tui.setFocus(component)
+
+        var called = false
+        tui.onControlC = { called = true }
+        tui.handlesControlC = false
+
+        try tui.start()
+        terminal.sendInput(.key(.character("c"), modifiers: [.control]))
+
+        #expect(!called)
+        #expect(component.inputs.count == 1)
     }
 
     @Test
