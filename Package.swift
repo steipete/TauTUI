@@ -4,7 +4,7 @@
 import PackageDescription
 
 // Current package version
-private let packageVersion = "0.1.1"
+private let packageVersion = "0.1.5"
 
 let package = Package(
     name: "TauTUI",

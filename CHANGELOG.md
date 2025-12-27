@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - Unreleased
+- TUI now intercepts Ctrl+C by default (stop terminal + exit), with an override hook and tests.
+
 ## [0.1.4] - 2025-11-21
 - Added golden snapshots for TTYSampler scenarios (select, markdown, markdown tables) under `Tests/Fixtures/TTY`, with tests that replay scripts for visual regressions.
 - TTYSampler gains `markdownTable` scenario and bundled scripts (`markdown.json`, `markdown-table.json`) for wrapping/table coverage.
