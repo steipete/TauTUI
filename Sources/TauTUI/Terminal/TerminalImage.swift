@@ -174,7 +174,7 @@ public enum TerminalImage {
         preserveAspectRatio: Bool = true,
         inline: Bool = true) -> String
     {
-        var params: [String] = ["inline=\(inline ? 1 : 0)"]
+        var params = ["inline=\(inline ? 1 : 0)"]
         if let width { params.append("width=\(width)") }
         if let height { params.append("height=\(height)") }
         if let name {
@@ -211,15 +211,15 @@ public enum TerminalImage {
     public static func getImageDimensions(base64Data: String, mimeType: String) -> ImageDimensions? {
         switch mimeType {
         case "image/png":
-            return self.getPngDimensions(base64Data: base64Data)
+            self.getPngDimensions(base64Data: base64Data)
         case "image/jpeg":
-            return self.getJpegDimensions(base64Data: base64Data)
+            self.getJpegDimensions(base64Data: base64Data)
         case "image/gif":
-            return self.getGifDimensions(base64Data: base64Data)
+            self.getGifDimensions(base64Data: base64Data)
         case "image/webp":
-            return self.getWebpDimensions(base64Data: base64Data)
+            self.getWebpDimensions(base64Data: base64Data)
         default:
-            return nil
+            nil
         }
     }
 
@@ -331,7 +331,7 @@ public enum TerminalImage {
             return .init(widthPx: width, heightPx: height)
         case "VP8L":
             if bytes.count < 25 { return nil }
-            let bits = readUInt32LE(bytes, offset: 21)
+            let bits = self.readUInt32LE(bytes, offset: 21)
             let width = Int((bits & 0x3FFF) + 1)
             let height = Int(((bits >> 14) & 0x3FFF) + 1)
             return .init(widthPx: width, heightPx: height)

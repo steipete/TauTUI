@@ -75,4 +75,3 @@ struct TerminalImageTests {
         #expect(jpegDims?.heightPx == 16)
     }
 }
-

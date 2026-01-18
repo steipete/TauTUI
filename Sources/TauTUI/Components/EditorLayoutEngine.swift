@@ -103,7 +103,7 @@ enum EditorLayoutEngine {
             let colInSegment = cursorCol - vl.startCol
             let isLastSegmentOfLine = (i == visualLines.count - 1) || (visualLines[i + 1].logicalLine != vl.logicalLine)
 
-            if colInSegment >= 0 && (colInSegment < vl.length || (isLastSegmentOfLine && colInSegment <= vl.length)) {
+            if colInSegment >= 0, colInSegment < vl.length || (isLastSegmentOfLine && colInSegment <= vl.length) {
                 return i
             }
         }
@@ -257,14 +257,14 @@ enum EditorLayoutEngine {
     }
 }
 
-private extension String {
-    func prefixCharacters(_ count: Int) -> String {
+extension String {
+    fileprivate func prefixCharacters(_ count: Int) -> String {
         guard count > 0 else { return "" }
         let idx = self.index(self.startIndex, offsetBy: min(count, self.count))
         return String(self[..<idx])
     }
 
-    func dropCharacters(_ count: Int) -> String {
+    fileprivate func dropCharacters(_ count: Int) -> String {
         guard count > 0 else { return self }
         let idx = self.index(self.startIndex, offsetBy: min(count, self.count))
         return String(self[idx...])

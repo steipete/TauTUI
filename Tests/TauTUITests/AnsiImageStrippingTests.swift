@@ -12,4 +12,3 @@ struct AnsiImageStrippingTests {
         #expect(Ansi.stripCodes(input) == "abcdef")
     }
 }
-

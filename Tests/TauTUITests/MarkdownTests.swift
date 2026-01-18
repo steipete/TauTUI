@@ -115,7 +115,7 @@ struct MarkdownTests {
 
         let tableLines = plain.filter { $0.hasPrefix("│") }
         for line in tableLines {
-            let borderCount = line.filter { $0 == "│" }.count
+            let borderCount = line.count(where: { $0 == "│" })
             #expect(borderCount == 2)
         }
 

@@ -293,6 +293,7 @@ private final class AnsiCodeTracker {
             i += 1
         }
     }
+
     // swiftlint:enable cyclomatic_complexity
 
     func updateFromText(_ text: String) {
@@ -341,8 +342,8 @@ private final class AnsiCodeTracker {
     }
 }
 
-private extension String {
-    func rstripSpaces() -> String {
+extension String {
+    fileprivate func rstripSpaces() -> String {
         var end = self.endIndex
         while end > self.startIndex {
             let prev = self.index(before: end)

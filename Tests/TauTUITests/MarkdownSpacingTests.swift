@@ -26,7 +26,7 @@ struct MarkdownSpacingTests {
         }
 
         let between = lines[(fenceCloseIndex + 1)..<afterIndex]
-        #expect(between.filter { $0.isEmpty }.count == 1)
+        #expect(between.count(where: { $0.isEmpty }) == 1)
     }
 
     @Test
@@ -52,7 +52,7 @@ struct MarkdownSpacingTests {
         }
 
         let between = lines[(hrIndex + 1)..<afterIndex]
-        #expect(between.filter { $0.isEmpty }.count == 1)
+        #expect(between.count(where: { $0.isEmpty }) == 1)
     }
 
     @Test
@@ -75,7 +75,7 @@ struct MarkdownSpacingTests {
         }
 
         let between = lines[(titleIndex + 1)..<afterIndex]
-        #expect(between.filter { $0.isEmpty }.count == 1)
+        #expect(between.count(where: { $0.isEmpty }) == 1)
     }
 
     @Test
@@ -99,7 +99,7 @@ struct MarkdownSpacingTests {
         }
 
         let between = lines[(quoteIndex + 1)..<afterIndex]
-        #expect(between.filter { $0.isEmpty }.count == 1)
+        #expect(between.count(where: { $0.isEmpty }) == 1)
     }
 
     @Test

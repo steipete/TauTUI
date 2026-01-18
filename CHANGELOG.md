@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.5] - Unreleased
+## [0.1.5] - 2026-01-18
 - TUI now intercepts Ctrl+C by default (stop terminal + exit), with an override hook and tests.
 - Sync pi-mono keyboard handling: enable Kitty keyboard protocol, parse CSI-u sequences, and keep `.raw` input events opt-in (debug-only).
 - Input: add common readline-style shortcuts (Ctrl+A/E/U/K/W) plus word navigation/deletion; ignore raw escape sequences.

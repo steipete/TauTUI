@@ -139,4 +139,3 @@ extension Editor {
         self.isAutocompleting = true
     }
 }
-
