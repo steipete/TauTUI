@@ -163,7 +163,7 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
             return "/" + item.value + " "
         }
         if prefix.hasPrefix("@") {
-            return "@" + item.value + " "
+            return item.value + " "
         }
         return item.value
     }
