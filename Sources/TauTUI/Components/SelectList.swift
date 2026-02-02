@@ -76,8 +76,10 @@ public final class SelectList: Component {
             let title = isSelected ? self.theme.selectedText(item.label) : item.label
             var line = prefix + title
             if let description = item.description, width > 40 {
-                let spacing = String(repeating: " ", count: max(1, 32 - title.count))
-                let remaining = max(0, width - (prefix.count + title.count + spacing.count) - 2)
+                let titleWidth = VisibleWidth.measure(title)
+                let prefixWidth = VisibleWidth.measure(prefix)
+                let spacing = String(repeating: " ", count: max(1, 32 - titleWidth))
+                let remaining = max(0, width - (prefixWidth + titleWidth + spacing.count) - 2)
                 if remaining > 10 {
                     line += spacing + self.theme.description(String(description.prefix(remaining)))
                 }
