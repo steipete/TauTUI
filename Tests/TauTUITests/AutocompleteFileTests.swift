@@ -124,4 +124,118 @@ struct AutocompleteFileTests {
         let result = provider.forceFileSuggestions(lines: lines, cursorLine: 0, cursorCol: 10)
         #expect(result?.prefix == "/")
     }
+
+    @Test
+    func `applyCompletion does not double @ prefix for attachments`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        FileManager.default.createFile(atPath: temp.appendingPathComponent("image.png").path, contents: Data())
+
+        let provider = CombinedAutocompleteProvider(commands: [], basePath: temp.path)
+        let lines = ["@"]
+        let suggestion = provider.getSuggestions(lines: lines, cursorLine: 0, cursorCol: 1)
+        guard let item = suggestion?.items.first, let prefix = suggestion?.prefix else {
+            Issue.record("expected suggestion")
+            return
+        }
+
+        let result = provider.applyCompletion(
+            lines: lines,
+            cursorLine: 0,
+            cursorCol: 1,
+            item: item,
+            prefix: prefix)
+
+        #expect(result.lines[0] == "@image.png ")
+        #expect(!result.lines[0].hasPrefix("@@"))
+    }
+
+    @Test
+    func `applyCompletion works for attachment directories`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        try FileManager.default.createDirectory(
+            at: temp.appendingPathComponent("Examples"),
+            withIntermediateDirectories: false)
+
+        let provider = CombinedAutocompleteProvider(commands: [], basePath: temp.path)
+        let lines = ["@"]
+        let suggestion = provider.getSuggestions(lines: lines, cursorLine: 0, cursorCol: 1)
+        guard let item = suggestion?.items.first(where: { $0.label == "Examples/" }),
+              let prefix = suggestion?.prefix else {
+            Issue.record("expected Examples/ suggestion")
+            return
+        }
+
+        let result = provider.applyCompletion(
+            lines: lines,
+            cursorLine: 0,
+            cursorCol: 1,
+            item: item,
+            prefix: prefix)
+
+        #expect(result.lines[0] == "@Examples/ ")
+        #expect(!result.lines[0].hasPrefix("@@"))
+    }
+
+    @Test
+    func `applyCompletion with partial attachment path`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        FileManager.default.createFile(atPath: temp.appendingPathComponent("readme.md").path, contents: Data())
+
+        let provider = CombinedAutocompleteProvider(commands: [], basePath: temp.path)
+        let lines = ["@rea"]
+        let suggestion = provider.getSuggestions(lines: lines, cursorLine: 0, cursorCol: 4)
+        guard let item = suggestion?.items.first, let prefix = suggestion?.prefix else {
+            Issue.record("expected suggestion")
+            return
+        }
+
+        let result = provider.applyCompletion(
+            lines: lines,
+            cursorLine: 0,
+            cursorCol: 4,
+            item: item,
+            prefix: prefix)
+
+        #expect(result.lines[0] == "@readme.md ")
+        #expect(!result.lines[0].hasPrefix("@@"))
+    }
+
+    @Test
+    func `applyCompletion for nested attachment path`() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+
+        let subdir = temp.appendingPathComponent("docs")
+        try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: false)
+        FileManager.default.createFile(atPath: subdir.appendingPathComponent("guide.md").path, contents: Data())
+
+        let provider = CombinedAutocompleteProvider(commands: [], basePath: temp.path)
+        let lines = ["@docs/"]
+        let suggestion = provider.getSuggestions(lines: lines, cursorLine: 0, cursorCol: 6)
+        guard let item = suggestion?.items.first(where: { $0.label == "guide.md" }),
+              let prefix = suggestion?.prefix else {
+            Issue.record("expected guide.md suggestion")
+            return
+        }
+
+        let result = provider.applyCompletion(
+            lines: lines,
+            cursorLine: 0,
+            cursorCol: 6,
+            item: item,
+            prefix: prefix)
+
+        #expect(result.lines[0] == "@docs/guide.md ")
+        #expect(!result.lines[0].contains("@@"))
+    }
 }
