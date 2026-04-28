@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.6] - 2026-04-28
+- Refresh SwiftPM dependency pins, including swift-displaywidth 0.1.0 and swift-system 1.6.4.
+
 ## [0.1.5] - 2026-01-18
 - TUI now intercepts Ctrl+C by default (stop terminal + exit), with an override hook and tests.
 - Sync pi-mono keyboard handling: enable Kitty keyboard protocol, parse CSI-u sequences, and keep `.raw` input events opt-in (debug-only).
