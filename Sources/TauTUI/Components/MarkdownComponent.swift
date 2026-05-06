@@ -102,10 +102,21 @@ public final class MarkdownComponent: Component {
             underline: AnsiStyling.underline)
     }
 
-    public var text: String { didSet { self.invalidateCache() } }
-    public var padding: Padding { didSet { self.invalidateCache() } }
-    public var defaultTextStyle: DefaultTextStyle? { didSet { self.invalidateCache() } }
-    public var theme: MarkdownTheme { didSet { self.invalidateCache() } }
+    public var text: String {
+        didSet { self.invalidateCache() }
+    }
+
+    public var padding: Padding {
+        didSet { self.invalidateCache() }
+    }
+
+    public var defaultTextStyle: DefaultTextStyle? {
+        didSet { self.invalidateCache() }
+    }
+
+    public var theme: MarkdownTheme {
+        didSet { self.invalidateCache() }
+    }
 
     private var cachedWidth: Int?
     private var cachedLines: [String]?

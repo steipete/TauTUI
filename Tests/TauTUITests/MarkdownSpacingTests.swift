@@ -4,7 +4,7 @@ import Testing
 @Suite("Markdown spacing")
 struct MarkdownSpacingTests {
     @Test
-    func oneBlankLineBetweenCodeBlockAndFollowingParagraph() throws {
+    func `one blank line between code block and following paragraph`() {
         let source = """
         ```ts
         console.log("<div>hello</div>")
@@ -30,7 +30,7 @@ struct MarkdownSpacingTests {
     }
 
     @Test
-    func oneBlankLineBetweenDividerAndFollowingParagraph() throws {
+    func `one blank line between divider and following paragraph`() {
         let source = """
         before
 
@@ -56,7 +56,7 @@ struct MarkdownSpacingTests {
     }
 
     @Test
-    func oneBlankLineBetweenHeadingAndFollowingParagraph() throws {
+    func `one blank line between heading and following paragraph`() {
         let source = """
         # Title
         after
@@ -79,7 +79,7 @@ struct MarkdownSpacingTests {
     }
 
     @Test
-    func oneBlankLineBetweenBlockquoteAndFollowingParagraph() throws {
+    func `one blank line between blockquote and following paragraph`() {
         let source = """
         > quoted
 
@@ -103,7 +103,7 @@ struct MarkdownSpacingTests {
     }
 
     @Test
-    func htmlBlockIsRenderedAsText() throws {
+    func `html block is rendered as text`() {
         let source = "<div class=\"x\">hello</div>"
         let component = MarkdownComponent(text: source, padding: .init(horizontal: 0, vertical: 0))
         let lines = component.render(width: 40).map { Ansi.stripCodes($0) }
@@ -111,7 +111,7 @@ struct MarkdownSpacingTests {
     }
 
     @Test
-    func tableRespectsHorizontalPaddingInWidthBudget() throws {
+    func `table respects horizontal padding in width budget`() {
         let source = """
         | Col1 | Col2 |
         | --- | --- |

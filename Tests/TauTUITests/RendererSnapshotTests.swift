@@ -5,7 +5,7 @@ import Testing
 @Suite("Renderer snapshots")
 struct RendererSnapshotTests {
     @MainActor @Test
-    func markdownSnapshot() throws {
+    func `markdown snapshot`() throws {
         let terminal = VirtualTerminal(columns: 30, rows: 10)
         let tui = TUI(terminal: terminal, renderScheduler: { $0() })
         let markdown = MarkdownComponent(text: """
@@ -24,7 +24,7 @@ struct RendererSnapshotTests {
     }
 
     @MainActor @Test
-    func selectListSnapshot() throws {
+    func `select list snapshot`() throws {
         let terminal = VirtualTerminal(columns: 20, rows: 6)
         let tui = TUI(terminal: terminal, renderScheduler: { $0() })
         let list = SelectList(items: [

@@ -10,7 +10,7 @@ struct EditorPasteTests {
     }
 
     @Test
-    func multipleMarkersReplacedOnSubmit() async throws {
+    func `multiple markers replaced on submit`() {
         let editor = Editor()
         var submitted: String?
         editor.onSubmit = { submitted = $0 }
@@ -28,7 +28,7 @@ struct EditorPasteTests {
     }
 
     @Test
-    func markersDoNotMatchPartialIds() async throws {
+    func `markers do not match partial ids`() {
         let editor = Editor()
         var submitted: String?
         editor.onSubmit = { submitted = $0 }
@@ -42,7 +42,7 @@ struct EditorPasteTests {
     }
 
     @Test
-    func pastePrependsSpaceForFilePathsAfterWordCharacter() async throws {
+    func `paste prepends space for file paths after word character`() {
         let editor = Editor()
         editor.setText("hello")
 

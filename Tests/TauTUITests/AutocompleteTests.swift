@@ -16,7 +16,7 @@ private struct DummyCommand: SlashCommand {
 @Suite("Autocomplete")
 struct AutocompleteTests {
     @Test
-    func slashCommandSuggestions() async throws {
+    func `slash command suggestions`() {
         let provider = CombinedAutocompleteProvider(commands: [DummyCommand(name: "test", description: "desc")])
         let lines = ["/t"]
         let suggestion = provider.getSuggestions(lines: lines, cursorLine: 0, cursorCol: 2)
@@ -24,7 +24,7 @@ struct AutocompleteTests {
     }
 
     @Test
-    func inlineCommandItemsAppear() async throws {
+    func `inline command items appear`() {
         let provider = CombinedAutocompleteProvider(
             commands: [],
             staticCommands: [AutocompleteItem(value: "clear", label: "clear", description: "wipe output")])
@@ -34,7 +34,7 @@ struct AutocompleteTests {
     }
 
     @Test
-    func fileSuggestions() async throws {
+    func `file suggestions`() throws {
         let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
         let fileURL = tempDir.appendingPathComponent("hello.txt")

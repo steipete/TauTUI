@@ -5,7 +5,7 @@ import Testing
 @Suite("TerminalImage")
 struct TerminalImageTests {
     @Test
-    func detectCapabilities_kittyAndITerm2() {
+    func `detect capabilities kitty and I term 2`() {
         let kitty = TerminalImage.detectCapabilities(env: ["TERM_PROGRAM": "kitty"])
         #expect(kitty.images == .kitty)
 
@@ -14,7 +14,7 @@ struct TerminalImageTests {
     }
 
     @Test
-    func encodeKitty_chunksLargePayload() {
+    func `encode kitty chunks large payload`() {
         let payload = String(repeating: "A", count: 9000)
         let encoded = TerminalImage.encodeKitty(base64Data: payload, columns: 10, rows: 2, imageId: 7)
         #expect(encoded.contains("\u{001B}_G"))
@@ -26,7 +26,7 @@ struct TerminalImageTests {
     }
 
     @Test
-    func imageDimensions_pngGifWebpJpeg() {
+    func `image dimensions png gif webp jpeg`() {
         // 1x1 PNG
         let png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/fK0AAAAASUVORK5CYII="
         let pngDims = TerminalImage.getPngDimensions(base64Data: png)

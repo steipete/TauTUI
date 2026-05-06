@@ -4,7 +4,7 @@ import Testing
 @Suite("Terminal cell size query")
 struct TerminalCellSizeTests {
     @Test
-    func processTerminalParsesCellSizeResponse() throws {
+    func `process terminal parses cell size response`() {
         let parser = ProcessTerminal()
         let events = parser.parseForTests("\u{001B}[6;18;9t")
         #expect(events.count == 1)

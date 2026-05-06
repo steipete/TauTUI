@@ -75,7 +75,7 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
         pattern: "(?:^|[\\s\"'=])((?:~\\/|\\.{0,2}\\/?)(?:[^\\s\"'=]*\\/?)*[^\\s\"'=]*)$",
         options: [])
 
-    // basePath is captured as URL once to avoid repeated path parsing per keystroke.
+    /// basePath is captured as URL once to avoid repeated path parsing per keystroke.
     public init(
         commands: [SlashCommand] = [],
         staticCommands: [AutocompleteItem] = [],

@@ -6,11 +6,13 @@ struct AutocompleteSlashTests {
     private struct Command: SlashCommand {
         let name: String
         let description: String? = nil
-        func argumentCompletions(prefix: String) -> [AutocompleteItem] { [] }
+        func argumentCompletions(prefix: String) -> [AutocompleteItem] {
+            []
+        }
     }
 
     @Test
-    func filtersCaseInsensitiveMaintainsOrder() throws {
+    func `filters case insensitive maintains order`() {
         let provider = CombinedAutocompleteProvider(commands: [
             Command(name: "clear"),
             Command(name: "clap"),
@@ -30,7 +32,7 @@ struct AutocompleteSlashTests {
     }
 
     @Test
-    func argumentCompletionsStopAtSpace() throws {
+    func `argument completions stop at space`() {
         let provider = CombinedAutocompleteProvider(commands: [
             Command(name: "say"),
         ])

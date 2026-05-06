@@ -26,7 +26,7 @@ struct TTYReplayerTests {
     }
 
     @Test
-    func replaysEditorScript() async throws {
+    func `replays editor script`() async throws {
         let script = TTYScript(
             columns: 40,
             rows: 10,
@@ -53,7 +53,7 @@ struct TTYReplayerTests {
     }
 
     @Test
-    func selectSnapshotMatchesGolden() async throws {
+    func `select snapshot matches golden`() async throws {
         let script = try self.loadScript("select")
         let expected = try self.loadSnapshot("select")
 
@@ -75,7 +75,7 @@ struct TTYReplayerTests {
     }
 
     @Test
-    func markdownSnapshotMatchesGolden() async throws {
+    func `markdown snapshot matches golden`() async throws {
         let script = try self.loadScript("markdown")
         let expected = try self.loadSnapshot("markdown")
 
@@ -96,7 +96,7 @@ struct TTYReplayerTests {
     }
 
     @Test
-    func markdownTableSnapshotMatchesGolden() async throws {
+    func `markdown table snapshot matches golden`() async throws {
         let script = try self.loadScript("markdown-table")
         let expected = try self.loadSnapshot("markdown-table")
 
@@ -118,7 +118,7 @@ struct TTYReplayerTests {
     }
 
     @Test
-    func appliesThemeEvents() async throws {
+    func `applies theme events`() async throws {
         let script = TTYScript(
             columns: 20,
             rows: 4,
@@ -140,7 +140,7 @@ struct TTYReplayerTests {
     }
 
     @Test
-    func resizesEditorAndKeepsWidth() async throws {
+    func `resizes editor and keeps width`() async throws {
         let script = TTYScript(
             columns: 14,
             rows: 6,

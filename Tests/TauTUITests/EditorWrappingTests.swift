@@ -4,7 +4,7 @@ import Testing
 @Suite("Editor wrapping")
 struct EditorWrappingTests {
     @Test
-    func wrapsWideEmojisAndPadsToWidth() {
+    func `wraps wide emojis and pads to width`() {
         let editor = Editor()
         let width = 20
         editor.setText("Hello ✅ World")
@@ -16,7 +16,7 @@ struct EditorWrappingTests {
     }
 
     @Test
-    func wrapsEmojisAtExactBoundary() {
+    func `wraps emojis at exact boundary`() {
         let editor = Editor()
         let width = 10
         editor.setText("✅✅✅✅✅✅")
@@ -28,7 +28,7 @@ struct EditorWrappingTests {
     }
 
     @Test
-    func wrapsCJKCharactersByDisplayWidth() {
+    func `wraps CJK characters by display width`() {
         let editor = Editor()
         let width = 10
         editor.setText("日本語テスト")
@@ -45,7 +45,7 @@ struct EditorWrappingTests {
     }
 
     @Test
-    func mixedASCIIAndWideCharactersFitExactly() {
+    func `mixed ASCII and wide characters fit exactly`() {
         let editor = Editor()
         let width = 15
         editor.setText("Test ✅ OK 日本")
@@ -56,7 +56,7 @@ struct EditorWrappingTests {
     }
 
     @Test
-    func cursorRendersOnWideCharacters() {
+    func `cursor renders on wide characters`() {
         let editor = Editor()
         let width = 20
         editor.setText("A✅B")
@@ -67,7 +67,7 @@ struct EditorWrappingTests {
     }
 
     @Test
-    func doesNotExceedWidthWithEmojiAtWrapBoundary() {
+    func `does not exceed width with emoji at wrap boundary`() {
         let editor = Editor()
         let width = 11
         editor.setText("0123456789✅")

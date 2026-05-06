@@ -4,7 +4,7 @@ import Testing
 @Suite("SelectList")
 struct SelectListTests {
     @Test
-    func movesSelectionAndSelects() async throws {
+    func `moves selection and selects`() {
         let items = [
             SelectItem(value: "one", label: "One"),
             SelectItem(value: "two", label: "Two"),
@@ -19,7 +19,7 @@ struct SelectListTests {
     }
 
     @Test
-    func filtersItems() async throws {
+    func `filters items`() {
         let items = [SelectItem(value: "apple", label: "Apple"), SelectItem(value: "banana", label: "Banana")]
         let list = SelectList(items: items)
         list.setFilter("ba")
@@ -43,7 +43,8 @@ struct SelectListTests {
 
         guard let descPos0 = line0.range(of: "first")?.lowerBound,
               let descPos1 = line1.range(of: "second")?.lowerBound,
-              let descPos2 = line2.range(of: "third")?.lowerBound else {
+              let descPos2 = line2.range(of: "third")?.lowerBound
+        else {
             Issue.record("Expected descriptions in rendered output")
             return
         }

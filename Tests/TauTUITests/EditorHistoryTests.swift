@@ -4,14 +4,14 @@ import Testing
 @Suite("Editor history")
 struct EditorHistoryTests {
     @Test
-    func upArrowDoesNothingWhenHistoryEmpty() {
+    func `up arrow does nothing when history empty`() {
         let editor = Editor()
         editor.handle(input: .key(.arrowUp))
         #expect(editor.getText().isEmpty)
     }
 
     @Test
-    func upArrowShowsMostRecentWhenEditorEmpty() {
+    func `up arrow shows most recent when editor empty`() {
         let editor = Editor()
         editor.addToHistory("first prompt")
         editor.addToHistory("second prompt")
@@ -21,7 +21,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func repeatedUpCyclesToOldest() {
+    func `repeated up cycles to oldest`() {
         let editor = Editor()
         editor.addToHistory("first")
         editor.addToHistory("second")
@@ -41,7 +41,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func downArrowReturnsToEmptyAfterBrowsingHistory() {
+    func `down arrow returns to empty after browsing history`() {
         let editor = Editor()
         editor.addToHistory("prompt")
 
@@ -53,7 +53,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func downArrowNavigatesForwardThroughHistory() {
+    func `down arrow navigates forward through history`() {
         let editor = Editor()
         editor.addToHistory("first")
         editor.addToHistory("second")
@@ -74,7 +74,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func typingExitsHistoryMode() {
+    func `typing exits history mode`() {
         let editor = Editor()
         editor.addToHistory("old prompt")
 
@@ -85,7 +85,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func setTextExitsHistoryMode() {
+    func `set text exits history mode`() {
         let editor = Editor()
         editor.addToHistory("first")
         editor.addToHistory("second")
@@ -99,7 +99,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func historyIgnoresEmptyAndConsecutiveDuplicates() {
+    func `history ignores empty and consecutive duplicates`() {
         let editor = Editor()
         editor.addToHistory("")
         editor.addToHistory("   ")
@@ -115,7 +115,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func historyAllowsNonConsecutiveDuplicates() {
+    func `history allows non consecutive duplicates`() {
         let editor = Editor()
         editor.addToHistory("first")
         editor.addToHistory("second")
@@ -132,7 +132,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func usesCursorMovementInsteadOfHistoryWhenEditorHasContent() {
+    func `uses cursor movement instead of history when editor has content`() {
         let editor = Editor()
         editor.addToHistory("history item")
         editor.setText("line1\nline2")
@@ -144,7 +144,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func historyIsLimitedTo100Entries() {
+    func `history is limited to 100 entries`() {
         let editor = Editor()
         for i in 0..<105 {
             editor.addToHistory("prompt \(i)")
@@ -161,7 +161,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func multilineHistoryEntry_allowsCursorMovementThenHistoryNavigation() {
+    func `multiline history entry allows cursor movement then history navigation`() {
         let editor = Editor()
         editor.addToHistory("older entry")
         editor.addToHistory("line1\nline2\nline3")
@@ -176,7 +176,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func multilineHistoryEntry_downMovesWithinThenExits() {
+    func `multiline history entry down moves within then exits`() {
         let editor = Editor()
         editor.addToHistory("line1\nline2\nline3")
 
@@ -195,7 +195,7 @@ struct EditorHistoryTests {
     }
 
     @Test
-    func publicCursorAndLinesAccessors() {
+    func `public cursor and lines accessors`() {
         let editor = Editor()
         #expect(editor.getCursor() == CursorPosition(line: 0, col: 0))
 

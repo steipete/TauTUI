@@ -4,7 +4,7 @@ import Testing
 @Suite("Markdown component")
 struct MarkdownTests {
     @Test
-    func nestedLists() async throws {
+    func `nested lists`() {
         let source = """
         - Item 1
           - Nested 1.1
@@ -20,7 +20,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func orderedList() async throws {
+    func `ordered list`() {
         let source = """
         1. First
            1. Nested first
@@ -34,7 +34,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func tables() async throws {
+    func tables() {
         let source = """
         | Name | Age |
         | --- | --- |
@@ -49,7 +49,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func tableAlignmentBaseline() async throws {
+    func `table alignment baseline`() {
         let source = """
         | Left | Center | Right |
         | :--- | :---: | ---: |
@@ -65,7 +65,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func combinedFeatures() async throws {
+    func `combined features`() {
         let source = """
         # Test Document
 
@@ -86,7 +86,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func foregroundColorIsApplied() async throws {
+    func `foreground color is applied`() {
         let component = MarkdownComponent(
             text: "colored",
             padding: .init(horizontal: 0, vertical: 0),
@@ -97,7 +97,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func wrapsLongUnbrokenTokensInsideTableCells() async throws {
+    func `wraps long unbroken tokens inside table cells`() {
         let url = "https://example.com/this/is/a/very/long/url/that/should/wrap"
         let source = """
         | Value |
@@ -127,7 +127,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func wrapsStyledInlineCodeInsideTableCells() async throws {
+    func `wraps styled inline code inside table cells`() {
         let source = """
         | Code |
         | --- |
@@ -145,7 +145,7 @@ struct MarkdownTests {
     }
 
     @Test
-    func extremelyNarrowTableDoesNotCrash() async throws {
+    func `extremely narrow table does not crash`() {
         let source = """
         | A | B | C |
         | --- | --- | --- |

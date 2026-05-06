@@ -4,7 +4,7 @@ import Testing
 @Suite("Loader")
 struct LoaderTests {
     @MainActor @Test
-    func tickAdvancesFrameAndRequestsRender() async throws {
+    func `tick advances frame and requests render`() {
         var renderCount = 0
         let loader = Loader(message: "Loading", autoStart: false) {
             renderCount += 1

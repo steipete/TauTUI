@@ -4,7 +4,7 @@ import Testing
 @Suite("TruncatedText")
 struct TruncatedTextTests {
     @Test
-    func padsLinesToWidth() async throws {
+    func `pads lines to width`() {
         let text = TruncatedText(text: "Hello world", paddingX: 1, paddingY: 1)
         let lines = text.render(width: 30)
         #expect(lines.count == 3)
@@ -14,7 +14,7 @@ struct TruncatedTextTests {
     }
 
     @Test
-    func truncatesWithResetAndEllipsis() async throws {
+    func `truncates with reset and ellipsis`() {
         let text = TruncatedText(text: "This is a very long piece of text", paddingX: 1, paddingY: 0)
         let lines = text.render(width: 15)
         #expect(lines.count == 1)
@@ -23,7 +23,7 @@ struct TruncatedTextTests {
     }
 
     @Test
-    func respectsAnsiWhenTruncating() async throws {
+    func `respects ansi when truncating`() {
         let colored = "\u{001B}[31mRed text that is long\u{001B}[0m"
         let text = TruncatedText(text: colored, paddingX: 1, paddingY: 0)
         let lines = text.render(width: 18)
@@ -32,7 +32,7 @@ struct TruncatedTextTests {
     }
 
     @Test
-    func stopsAtFirstNewline() async throws {
+    func `stops at first newline`() {
         let text = TruncatedText(text: "First line\nSecond line", paddingX: 1, paddingY: 0)
         let lines = text.render(width: 20)
         #expect(lines.count == 1)
@@ -40,7 +40,7 @@ struct TruncatedTextTests {
     }
 
     @Test
-    func handlesEmptyText() async throws {
+    func `handles empty text`() {
         let text = TruncatedText(text: "", paddingX: 1, paddingY: 0)
         let lines = text.render(width: 30)
         #expect(lines.count == 1)
@@ -48,7 +48,7 @@ struct TruncatedTextTests {
     }
 
     @Test
-    func fitsExactlyWithoutEllipsis() async throws {
+    func `fits exactly without ellipsis`() {
         let text = TruncatedText(text: "Hello world", paddingX: 1, paddingY: 0)
         let lines = text.render(width: 30)
         #expect(lines.count == 1)

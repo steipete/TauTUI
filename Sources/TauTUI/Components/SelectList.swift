@@ -40,14 +40,22 @@ public struct SelectListTheme: Sendable {
 }
 
 public final class SelectList: Component {
-    public var items: [SelectItem] { didSet { self.filterItems() } }
+    public var items: [SelectItem] {
+        didSet { self.filterItems() }
+    }
+
     public var maxVisible: Int
     public var onSelect: ((SelectItem) -> Void)?
     public var onCancel: (() -> Void)?
     public var onSelectionChange: ((SelectItem) -> Void)?
-    public var theme: SelectListTheme { didSet { self.filterItems() } }
+    public var theme: SelectListTheme {
+        didSet { self.filterItems() }
+    }
 
-    private var filterText: String = "" { didSet { self.filterItems() } }
+    private var filterText: String = "" {
+        didSet { self.filterItems() }
+    }
+
     private var filtered: [SelectItem] = []
     private var selectedIndex: Int = 0
 

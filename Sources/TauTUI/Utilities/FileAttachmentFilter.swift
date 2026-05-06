@@ -27,7 +27,7 @@ enum FileAttachmentFilter {
         #endif
 
         // Allow common image extensions even if UTType is unavailable
-        let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "bmp", "tiff", "heic", "webp"]
+        let imageExtensions: Set = ["png", "jpg", "jpeg", "gif", "bmp", "tiff", "heic", "webp"]
         return imageExtensions.contains(pathExtension)
     }
 }

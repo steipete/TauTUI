@@ -5,12 +5,17 @@ import Testing
 struct BoxTests {
     private final class Dummy: Component {
         let lines: [String]
-        init(_ lines: [String]) { self.lines = lines }
-        func render(width: Int) -> [String] { self.lines }
+        init(_ lines: [String]) {
+            self.lines = lines
+        }
+
+        func render(width: Int) -> [String] {
+            self.lines
+        }
     }
 
     @Test
-    func boxPadsAndAppliesBackground() {
+    func `box pads and applies background`() {
         let bg = AnsiStyling.Background.rgb(1, 2, 3)
         let box = Box(paddingX: 1, paddingY: 1, background: bg, children: [Dummy(["hi"])])
 

@@ -24,7 +24,7 @@ final class ChatViewModel {
         self.applyCurrentTheme()
     }
 
-    // Helper to avoid capturing non-Sendable UI state inside escaping closures.
+    /// Helper to avoid capturing non-Sendable UI state inside escaping closures.
     func removeLoaderAndAppendReply(loader: Loader, reply: String) {
         self.messages.removeChild(loader)
         let replyMarkdown = MarkdownComponent(text: reply, padding: .init(horizontal: 1, vertical: 0))
@@ -112,5 +112,7 @@ private struct DemoCommand: SlashCommand {
     let name: String
     let description: String?
 
-    func argumentCompletions(prefix: String) -> [AutocompleteItem] { [] }
+    func argumentCompletions(prefix: String) -> [AutocompleteItem] {
+        []
+    }
 }

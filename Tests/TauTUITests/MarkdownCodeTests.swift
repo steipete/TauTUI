@@ -4,7 +4,7 @@ import Testing
 @Suite("Markdown code & quotes")
 struct MarkdownCodeTests {
     @Test
-    func codeBlockRendersFenceAndContent() throws {
+    func `code block renders fence and content`() {
         let source = """
         ```swift
         print("hello")
@@ -17,7 +17,7 @@ struct MarkdownCodeTests {
     }
 
     @Test
-    func blockQuotePrefixesWithBar() throws {
+    func `block quote prefixes with bar`() {
         let source = "> quoted line\n> second"
         let component = MarkdownComponent(text: source, padding: .init(horizontal: 0, vertical: 0))
         let lines = component.render(width: 40).map { Ansi.stripCodes($0) }

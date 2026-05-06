@@ -43,7 +43,7 @@ public final class Editor: Component {
     var pastes: [Int: String] = [:]
     var pasteCounter = 0
 
-    // Store last render width for cursor navigation + history rules.
+    /// Store last render width for cursor navigation + history rules.
     var lastWidth: Int = 80
 
     // Prompt history for up/down navigation (pi-mono parity).

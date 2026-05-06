@@ -11,14 +11,14 @@ private func type(_ text: String, into editor: Editor) {
 @Suite("Editor + Unicode")
 struct EditorUnicodeTests {
     @Test
-    func insertsMixedUnicode() async throws {
+    func `inserts mixed unicode`() {
         let editor = Editor()
         type("Hello äöü 😀", into: editor)
         #expect(editor.getText() == "Hello äöü 😀")
     }
 
     @Test
-    func backspaceHandlesSingleAndMultiScalarCharacters() async throws {
+    func `backspace handles single and multi scalar characters`() {
         let editor = Editor()
         type("ä👍", into: editor)
 
@@ -30,7 +30,7 @@ struct EditorUnicodeTests {
     }
 
     @Test
-    func arrowNavigationAcrossEmoji() async throws {
+    func `arrow navigation across emoji`() {
         let editor = Editor()
         type("😀👍", into: editor)
         editor.handle(input: .key(.arrowLeft))
@@ -39,7 +39,7 @@ struct EditorUnicodeTests {
     }
 
     @Test
-    func insertAfterCursorMoveOverUmlauts() async throws {
+    func `insert after cursor move over umlauts`() {
         let editor = Editor()
         type("äöü", into: editor)
         editor.handle(input: .key(.arrowLeft))
@@ -49,28 +49,28 @@ struct EditorUnicodeTests {
     }
 
     @Test
-    func pastePreservesUnicodeAndStripsControlChars() async throws {
+    func `paste preserves unicode and strips control chars`() {
         let editor = Editor()
         editor.handle(input: .paste("Hällö\u{0007} Wörld! 😀 äöüÄÖÜß"))
         #expect(editor.getText() == "Hällö Wörld! 😀 äöüÄÖÜß")
     }
 
     @Test
-    func preservesUmlautsAcrossLineBreaks() async throws {
+    func `preserves umlauts across line breaks`() {
         let editor = Editor()
         type("äöü\nÄÖÜ", into: editor)
         #expect(editor.getText() == "äöü\nÄÖÜ")
     }
 
     @Test
-    func setTextReplacesDocumentWithUnicode() async throws {
+    func `set text replaces document with unicode`() {
         let editor = Editor()
         editor.setText("Hällö Wörld! 😀 äöüÄÖÜß")
         #expect(editor.getText() == "Hällö Wörld! 😀 äöüÄÖÜß")
     }
 
     @Test
-    func ctrlAMoveThenInsertWithUnicodePresent() async throws {
+    func `ctrl A move then insert with unicode present`() {
         let editor = Editor()
         type("äöü", into: editor)
         editor.handle(input: .key(.character("a"), modifiers: [.control]))

@@ -3,7 +3,7 @@
 
 import PackageDescription
 
-// Current package version
+/// Current package version
 private let packageVersion = "0.1.6"
 
 let package = Package(

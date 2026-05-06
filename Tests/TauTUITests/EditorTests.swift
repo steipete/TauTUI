@@ -5,7 +5,9 @@ import Testing
 private struct TestCommand: SlashCommand {
     let name: String
     let description: String? = nil
-    func argumentCompletions(prefix: String) -> [AutocompleteItem] { [] }
+    func argumentCompletions(prefix: String) -> [AutocompleteItem] {
+        []
+    }
 }
 
 private func type(_ text: String, into editor: Editor) {
@@ -56,7 +58,7 @@ private final class StubAutocompleteProvider: AutocompleteProvider {
 @Suite("Editor")
 struct EditorTests {
     @Test
-    func typingAndSubmitResetsState() async throws {
+    func `typing and submit resets state`() {
         let editor = Editor()
         var submitted: String?
         editor.onSubmit = { submitted = $0 }
@@ -67,7 +69,7 @@ struct EditorTests {
     }
 
     @Test
-    func newlineCreatesSecondLine() async throws {
+    func `newline creates second line`() {
         let editor = Editor()
         type("hello", into: editor)
         type("\nworld", into: editor)
@@ -75,7 +77,7 @@ struct EditorTests {
     }
 
     @Test
-    func backspaceMergesLines() async throws {
+    func `backspace merges lines`() {
         let editor = Editor()
         editor.setText("hello\nworld")
         editor.handle(input: .key(.home))
@@ -84,7 +86,7 @@ struct EditorTests {
     }
 
     @Test
-    func largePasteMarkerReplacedOnSubmit() async throws {
+    func `large paste marker replaced on submit`() {
         let editor = Editor()
         var submitted: String?
         editor.onSubmit = { submitted = $0 }
@@ -96,7 +98,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlUAndCtrlKDeleteSegments() async throws {
+    func `ctrl U and ctrl K delete segments`() {
         let editor = Editor()
         editor.setText("hello world")
         editor.handle(input: .key(.home))
@@ -110,7 +112,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlWDeletesWordBackwards() async throws {
+    func `ctrl W deletes word backwards`() {
         let editor = Editor()
         editor.setText("hello world")
         editor.handle(input: .key(.end))
@@ -119,7 +121,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlAMovesToStartAndCtrlEMovesToEnd() async throws {
+    func `ctrl A moves to start and ctrl E moves to end`() {
         let editor = Editor()
         editor.setText("hello world")
         editor.handle(input: .key(.character("a"), modifiers: [.control]))
@@ -132,7 +134,7 @@ struct EditorTests {
     }
 
     @Test
-    func optionBackspaceDeletesWord() async throws {
+    func `option backspace deletes word`() {
         let editor = Editor()
         editor.setText("hello world")
         editor.handle(input: .key(.end))
@@ -141,7 +143,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlWDeletesWhitespaceThenWord() async throws {
+    func `ctrl W deletes whitespace then word`() {
         let editor = Editor()
         editor.setText("hello   world")
 
@@ -153,7 +155,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlWDeletesPunctuationRuns() async throws {
+    func `ctrl W deletes punctuation runs`() {
         let editor = Editor()
         editor.setText("foo.bar")
 
@@ -165,7 +167,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlLeftRightMovesByWord() async throws {
+    func `ctrl left right moves by word`() {
         let editor = Editor()
         editor.setText("hello world")
 
@@ -179,7 +181,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlWAndOptionBackspaceParity() async throws {
+    func `ctrl W and option backspace parity`() {
         let editor = Editor()
 
         editor.setText("foo bar baz")
@@ -214,7 +216,7 @@ struct EditorTests {
     }
 
     @Test
-    func ctrlLeftRightWordNavigationParity() async throws {
+    func `ctrl left right word navigation parity`() {
         let editor = Editor()
         editor.setText("foo bar... baz")
 
@@ -243,7 +245,7 @@ struct EditorTests {
     }
 
     @Test
-    func optionDeleteForwardDeletesWord() async throws {
+    func `option delete forward deletes word`() {
         let editor = Editor()
         editor.setText("hello world")
         editor.handle(input: .key(.home))
@@ -252,7 +254,7 @@ struct EditorTests {
     }
 
     @Test
-    func optionEnterAddsNewlineNotSubmit() async throws {
+    func `option enter adds newline not submit`() {
         let editor = Editor()
         editor.setText("hello")
         editor.handle(input: .key(.enter, modifiers: [.option]))
@@ -260,14 +262,14 @@ struct EditorTests {
     }
 
     @Test
-    func vscodeShiftEnterSequenceAddsNewline() async throws {
+    func `vscode shift enter sequence adds newline`() {
         let editor = Editor()
         editor.handle(input: .key(.enter, modifiers: [.shift]))
         #expect(editor.getText() == "\n")
     }
 
     @Test
-    func tabForcesFileAutocomplete() throws {
+    func `tab forces file autocomplete`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -285,7 +287,7 @@ struct EditorTests {
     }
 
     @Test
-    func slashCommandsTabComplete() throws {
+    func `slash commands tab complete`() {
         let provider = CombinedAutocompleteProvider(commands: [TestCommand(name: "clear")])
         let editor = Editor()
         editor.setAutocompleteProvider(provider)
@@ -298,7 +300,7 @@ struct EditorTests {
     }
 
     @Test
-    func pasteFiltersControlCharacters() throws {
+    func `paste filters control characters`() {
         let editor = Editor()
         editor.handle(input: .paste("\tcolumn\u{0007}\nline"))
         let text = editor.getText()
@@ -307,7 +309,7 @@ struct EditorTests {
     }
 
     @Test
-    func escapeCancelsAutocomplete() throws {
+    func `escape cancels autocomplete`() {
         let provider = StubAutocompleteProvider()
         let editor = Editor()
         editor.setAutocompleteProvider(provider)
@@ -325,7 +327,7 @@ struct EditorTests {
     }
 
     @Test
-    func tabSkipsWhenProviderDeclines() throws {
+    func `tab skips when provider declines`() {
         let provider = StubAutocompleteProvider()
         provider.triggerFileCompletion = false
         let editor = Editor()
@@ -339,7 +341,7 @@ struct EditorTests {
     }
 
     @Test
-    func arrowLeftAndRightMoveCursor() throws {
+    func `arrow left and right move cursor`() {
         let editor = Editor()
         editor.setText("hi")
         editor.handle(input: .key(.arrowLeft))
@@ -351,7 +353,7 @@ struct EditorTests {
     }
 
     @Test
-    func arrowUpAndDownNavigateLines() throws {
+    func `arrow up and down navigate lines`() {
         let editor = Editor()
         editor.setText("foo\nbar")
         editor.handle(input: .key(.arrowUp))
@@ -363,7 +365,7 @@ struct EditorTests {
     }
 
     @Test
-    func homeAndEndKeysMoveToLineBounds() throws {
+    func `home and end keys move to line bounds`() {
         let editor = Editor()
         editor.setText("hello")
         editor.handle(input: .key(.home))
@@ -375,7 +377,7 @@ struct EditorTests {
     }
 
     @Test
-    func deleteKeyRemovesForwardCharacters() throws {
+    func `delete key removes forward characters`() {
         let editor = Editor()
         editor.setText("hello")
         editor.handle(input: .key(.home))
@@ -384,7 +386,7 @@ struct EditorTests {
     }
 
     @Test
-    func deleteKeyMergesNextLine() throws {
+    func `delete key merges next line`() {
         let editor = Editor()
         editor.setText("foo\nbar")
         editor.handle(input: .key(.home))

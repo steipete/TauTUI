@@ -5,7 +5,7 @@ import Testing
 @Suite("Autocomplete file suggestions")
 struct AutocompleteFileTests {
     @Test
-    func directoriesComeFirstAndAreSorted() throws {
+    func `directories come first and are sorted`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -32,7 +32,7 @@ struct AutocompleteFileTests {
     }
 
     @Test
-    func attachmentModeFiltersNonText() throws {
+    func `attachment mode filters non text`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -55,7 +55,7 @@ struct AutocompleteFileTests {
     }
 
     @Test
-    func fileSuggestionsAreCappedAtTen() throws {
+    func `file suggestions are capped at ten`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -83,7 +83,7 @@ struct AutocompleteFileTests {
     }
 
     @Test
-    func forcedSuggestionsWorkWithoutPathDelimiters() throws {
+    func `forced suggestions work without path delimiters`() throws {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: temp) }
@@ -101,7 +101,7 @@ struct AutocompleteFileTests {
     }
 
     @Test
-    func forceFileSuggestionsExtractsSlashPrefix() throws {
+    func `force file suggestions extracts slash prefix`() {
         let provider = CombinedAutocompleteProvider(basePath: "/tmp")
 
         let lines = ["hey /"]
@@ -110,7 +110,7 @@ struct AutocompleteFileTests {
     }
 
     @Test
-    func forceFileSuggestionsDoesNotTriggerForSlashCommandItself() throws {
+    func `force file suggestions does not trigger for slash command itself`() {
         let provider = CombinedAutocompleteProvider(basePath: "/tmp")
         let lines = ["/model"]
         let result = provider.forceFileSuggestions(lines: lines, cursorLine: 0, cursorCol: 6)
@@ -118,7 +118,7 @@ struct AutocompleteFileTests {
     }
 
     @Test
-    func forceFileSuggestionsTriggersForSlashCommandArgument() throws {
+    func `force file suggestions triggers for slash command argument`() {
         let provider = CombinedAutocompleteProvider(basePath: "/tmp")
         let lines = ["/command /"]
         let result = provider.forceFileSuggestions(lines: lines, cursorLine: 0, cursorCol: 10)
@@ -166,7 +166,8 @@ struct AutocompleteFileTests {
         let lines = ["@"]
         let suggestion = provider.getSuggestions(lines: lines, cursorLine: 0, cursorCol: 1)
         guard let item = suggestion?.items.first(where: { $0.label == "Examples/" }),
-              let prefix = suggestion?.prefix else {
+              let prefix = suggestion?.prefix
+        else {
             Issue.record("expected Examples/ suggestion")
             return
         }
@@ -223,7 +224,8 @@ struct AutocompleteFileTests {
         let lines = ["@docs/"]
         let suggestion = provider.getSuggestions(lines: lines, cursorLine: 0, cursorCol: 6)
         guard let item = suggestion?.items.first(where: { $0.label == "guide.md" }),
-              let prefix = suggestion?.prefix else {
+              let prefix = suggestion?.prefix
+        else {
             Issue.record("expected guide.md suggestion")
             return
         }

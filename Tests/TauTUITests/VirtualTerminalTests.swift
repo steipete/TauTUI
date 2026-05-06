@@ -5,7 +5,7 @@ import Testing
 @Suite("VirtualTerminal helpers")
 struct VirtualTerminalTests {
     @Test
-    func viewportTracksWrites() throws {
+    func `viewport tracks writes`() {
         let terminal = VirtualTerminal(columns: 10, rows: 3)
         terminal.write("one\n")
         terminal.write("two\n")
@@ -14,7 +14,7 @@ struct VirtualTerminalTests {
     }
 
     @Test
-    func scrollBufferIncludesPendingLine() throws {
+    func `scroll buffer includes pending line`() {
         let terminal = VirtualTerminal(columns: 5, rows: 2)
         terminal.write("abc")
         let viewport = terminal.getViewport()
@@ -23,7 +23,7 @@ struct VirtualTerminalTests {
     }
 
     @Test
-    func clearSequenceResetsScrollback() throws {
+    func `clear sequence resets scrollback`() {
         let terminal = VirtualTerminal(columns: 5, rows: 2)
         terminal.write("hello\n")
         terminal.write(ANSI.clearScrollbackAndScreen)

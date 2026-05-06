@@ -11,10 +11,15 @@ public enum ANSI {
     public static let clearScreen = "\u{001B}[2J\u{001B}[H"
     public static let clearScrollbackAndScreen = "\u{001B}[3J\u{001B}[2J\u{001B}[H"
 
-    // Cursor movement
-    public static func cursorUp(_ lines: Int) -> String { "\u{001B}[\(max(lines, 1))A" }
-    public static func cursorDown(_ lines: Int) -> String { "\u{001B}[\(max(lines, 1))B" }
+    /// Cursor movement
+    public static func cursorUp(_ lines: Int) -> String {
+        "\u{001B}[\(max(lines, 1))A"
+    }
 
-    // Carriage return
+    public static func cursorDown(_ lines: Int) -> String {
+        "\u{001B}[\(max(lines, 1))B"
+    }
+
+    /// Carriage return
     public static let carriageReturn = "\r"
 }

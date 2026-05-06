@@ -4,7 +4,7 @@ import Testing
 @Suite("Ansi.stripCodes")
 struct AnsiImageStrippingTests {
     @Test
-    func stripCodes_removesKittyAndITerm2ImageSequences() {
+    func `strip codes removes kitty and I term 2 image sequences`() {
         let kitty = "\u{001B}_Ga=T,f=100;AAAA\u{001B}\\"
         let iterm = "\u{001B}]1337;File=inline=1:AAAA\u{0007}"
 

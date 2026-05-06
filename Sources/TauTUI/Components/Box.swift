@@ -1,9 +1,17 @@
 /// Container that applies padding and optional background to all children.
 /// Mirrors `packages/tui/src/components/box.ts` in pi-mono.
 public final class Box: Container {
-    public var paddingX: Int { didSet { self.invalidateCache() } }
-    public var paddingY: Int { didSet { self.invalidateCache() } }
-    public var background: AnsiStyling.Background? { didSet { self.invalidateCache() } }
+    public var paddingX: Int {
+        didSet { self.invalidateCache() }
+    }
+
+    public var paddingY: Int {
+        didSet { self.invalidateCache() }
+    }
+
+    public var background: AnsiStyling.Background? {
+        didSet { self.invalidateCache() }
+    }
 
     private var cachedWidth: Int?
     private var cachedChildLinesKey: String?

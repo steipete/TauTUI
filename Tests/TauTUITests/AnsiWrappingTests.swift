@@ -4,7 +4,7 @@ import Testing
 @Suite("ANSI wrapping")
 struct AnsiWrappingTests {
     @Test
-    func wrapsTextWithAnsiPreservingWidth() async throws {
+    func `wraps text with ansi preserving width`() {
         let text = "\u{001B}[31mHello world from TauTUI\u{001B}[0m"
         let wrapped = AnsiWrapping.wrapText(text, width: 8)
         #expect(!wrapped.isEmpty)
@@ -13,7 +13,7 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func wrapsSurrogatePairs() async throws {
+    func `wraps surrogate pairs`() {
         let text = "Hi 😀 there"
         let wrapped = AnsiWrapping.wrapText(text, width: 6)
         #expect(wrapped.count == 2)
@@ -22,7 +22,7 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func applyBackgroundPadsAndKeepsResets() async throws {
+    func `apply background pads and keeps resets`() {
         let bg = AnsiStyling.Background.rgb(0, 255, 0)
         let line = "\u{001B}[1mhello\u{001B}[0m world"
         let result = AnsiWrapping.applyBackgroundToLine(line, width: 20, background: bg)
@@ -32,7 +32,7 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func underlineDoesNotStartBeforeStyledText() async throws {
+    func `underline does not start before styled text`() {
         let underlineOn = "\u{001B}[4m"
         let underlineOff = "\u{001B}[24m"
         let url = "https://example.com/very/long/path/that/will/wrap"
@@ -46,7 +46,7 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func underlineDoesNotBleedIntoPadding() async throws {
+    func `underline does not bleed into padding`() {
         let underlineOn = "\u{001B}[4m"
         let underlineOff = "\u{001B}[24m"
         let url = "https://example.com/very/long/path/that/will/definitely/wrap"
@@ -62,7 +62,7 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func preservesBackgroundAcrossWrappedLinesWithoutFullReset() async throws {
+    func `preserves background across wrapped lines without full reset`() {
         let bgBlue = "\u{001B}[44m"
         let reset = "\u{001B}[0m"
         let text = "\(bgBlue)hello world this is blue background text\(reset)"
@@ -80,7 +80,7 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func preservesForegroundAcrossWrapsWithoutFullReset() async throws {
+    func `preserves foreground across wraps without full reset`() {
         let red = "\u{001B}[31m"
         let reset = "\u{001B}[0m"
         let text = "\(red)hello world this is red text that wraps\(reset)"
@@ -98,7 +98,7 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func resetsUnderlineButPreservesBackgroundAcrossWraps() async throws {
+    func `resets underline but preserves background across wraps`() {
         let underlineOn = "\u{001B}[4m"
         let underlineOff = "\u{001B}[24m"
         let reset = "\u{001B}[0m"

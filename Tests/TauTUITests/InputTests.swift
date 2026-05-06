@@ -4,7 +4,7 @@ import Testing
 @Suite("Input component")
 struct InputTests {
     @Test
-    func insertsCharactersAndSubmits() async throws {
+    func `inserts characters and submits`() {
         var submitted: String?
         let input = Input()
         input.onSubmit = { submitted = $0 }
@@ -15,7 +15,7 @@ struct InputTests {
     }
 
     @Test
-    func backspaceRemovesCharacters() async throws {
+    func `backspace removes characters`() {
         let input = Input(value: "hello")
         input.handle(input: .key(.backspace))
         input.handle(input: .key(.backspace))
@@ -23,7 +23,7 @@ struct InputTests {
     }
 
     @Test
-    func pasteStripsNewlines() async throws {
+    func `paste strips newlines`() {
         let input = Input()
         input.handle(input: .paste("hello world\n"))
         #expect(input.value == "hello world")
@@ -36,7 +36,7 @@ struct InputTests {
     }
 
     @Test
-    func ctrlAMovesToStartAndCtrlEMovesToEnd() async throws {
+    func `ctrl A moves to start and ctrl E moves to end`() {
         let input = Input(value: "hello")
         input.handle(input: .key(.character("a"), modifiers: [.control]))
         input.handle(input: .key(.character("x")))
@@ -48,7 +48,7 @@ struct InputTests {
     }
 
     @Test
-    func ctrlWDeletesWhitespaceThenWord() async throws {
+    func `ctrl W deletes whitespace then word`() {
         let input = Input(value: "hello   world")
         input.handle(input: .key(.character("w"), modifiers: [.control]))
         #expect(input.value == "hello   ")
@@ -58,14 +58,14 @@ struct InputTests {
     }
 
     @Test
-    func optionBackspaceDeletesWord() async throws {
+    func `option backspace deletes word`() {
         let input = Input(value: "hello world")
         input.handle(input: .key(.backspace, modifiers: [.option]))
         #expect(input.value == "hello ")
     }
 
     @Test
-    func ctrlLeftRightMovesByWord() async throws {
+    func `ctrl left right moves by word`() {
         let input = Input(value: "hello world")
 
         input.handle(input: .key(.arrowLeft, modifiers: [.control]))

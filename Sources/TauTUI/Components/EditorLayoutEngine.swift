@@ -1,12 +1,12 @@
 import Foundation
 
-struct EditorLayoutLine: Sendable {
+struct EditorLayoutLine {
     let text: String
     let hasCursor: Bool
     let cursorPos: Int?
 }
 
-struct EditorVisualLine: Sendable {
+struct EditorVisualLine {
     let logicalLine: Int
     let startCol: Int
     let length: Int

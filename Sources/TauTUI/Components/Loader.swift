@@ -16,9 +16,9 @@ public final class Loader: Component {
     }
 
     private enum RenderTarget {
-        // Custom render notifier lets tests drive the loader without a TUI.
+        /// Custom render notifier lets tests drive the loader without a TUI.
         case closure(() -> Void)
-        // Render callback keeps only a weak reference to TUI to avoid leaks.
+        /// Render callback keeps only a weak reference to TUI to avoid leaks.
         case tui(RenderCallback)
     }
 

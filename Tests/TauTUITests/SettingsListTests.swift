@@ -5,8 +5,14 @@ import Testing
 struct SettingsListTests {
     private final class Submenu: Component {
         private let done: (String?) -> Void
-        init(done: @escaping (String?) -> Void) { self.done = done }
-        func render(width: Int) -> [String] { ["submenu"] }
+        init(done: @escaping (String?) -> Void) {
+            self.done = done
+        }
+
+        func render(width: Int) -> [String] {
+            ["submenu"]
+        }
+
         func handle(input: TerminalInput) {
             if case .key(.enter, _) = input {
                 self.done("chosen")
@@ -15,7 +21,7 @@ struct SettingsListTests {
     }
 
     @Test
-    func arrowNavigationWrapsAround() {
+    func `arrow navigation wraps around`() {
         var changes: [(String, String)] = []
         var cancelled = false
 
@@ -43,7 +49,7 @@ struct SettingsListTests {
     }
 
     @Test
-    func enterCyclesValuesAndCallsOnChange() {
+    func `enter cycles values and calls on change`() {
         var changes: [(String, String)] = []
 
         let list = SettingsList(
@@ -63,7 +69,7 @@ struct SettingsListTests {
     }
 
     @Test
-    func submenuDelegatesInputAndRestoresSelection() {
+    func `submenu delegates input and restores selection`() {
         var changes: [(String, String)] = []
 
         let list = SettingsList(
