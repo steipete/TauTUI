@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+- Autocomplete no longer inserts a duplicate `@` when completing attachment paths. Thanks @DivineDominion.
+- Select-list descriptions now align consistently for selected and unselected rows. Thanks @DivineDominion.
+
 ## [0.1.6] - 2026-04-28
 - Refresh SwiftPM dependency pins, including swift-displaywidth 0.1.0 and swift-system 1.6.4.
 
