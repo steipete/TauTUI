@@ -21,46 +21,55 @@ public protocol SlashCommand {
 public struct AutocompleteSuggestion {
     public let items: [AutocompleteItem]
     public let prefix: String
+
+    public init(items: [AutocompleteItem], prefix: String) {
+        self.items = items
+        self.prefix = prefix
+    }
 }
 
 public protocol AutocompleteProvider {
     func getSuggestions(
         lines: [String],
         cursorLine: Int,
-        cursorCol: Int) -> AutocompleteSuggestion?
+        cursorCol: Int
+    ) -> AutocompleteSuggestion?
 
     func applyCompletion(
         lines: [String],
         cursorLine: Int,
         cursorCol: Int,
         item: AutocompleteItem,
-        prefix: String) -> (lines: [String], cursorLine: Int, cursorCol: Int)
+        prefix: String
+    ) -> (lines: [String], cursorLine: Int, cursorCol: Int)
 
     func forceFileSuggestions(
         lines: [String],
         cursorLine: Int,
-        cursorCol: Int) -> AutocompleteSuggestion?
+        cursorCol: Int
+    ) -> AutocompleteSuggestion?
 
     func shouldTriggerFileCompletion(
         lines: [String],
         cursorLine: Int,
-        cursorCol: Int) -> Bool
+        cursorCol: Int
+    ) -> Bool
 }
 
 extension AutocompleteProvider {
     public func forceFileSuggestions(
         lines: [String],
         cursorLine: Int,
-        cursorCol: Int) -> AutocompleteSuggestion?
-    {
+        cursorCol: Int
+    ) -> AutocompleteSuggestion? {
         nil
     }
 
     public func shouldTriggerFileCompletion(
         lines: [String],
         cursorLine: Int,
-        cursorCol: Int) -> Bool
-    {
+        cursorCol: Int
+    ) -> Bool {
         true
     }
 }
@@ -80,18 +89,21 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
         commands: [SlashCommand] = [],
         staticCommands: [AutocompleteItem] = [],
         basePath: String = FileManager.default.currentDirectoryPath,
-        fileManager: FileManager = .default)
-    {
+        fileManager: FileManager = .default
+    ) {
         self.commands = commands
         self.staticCommands = staticCommands
         self.baseURL = URL(fileURLWithPath: basePath)
         self.fileManager = fileManager
     }
 
-    public func getSuggestions(lines: [String], cursorLine: Int, cursorCol: Int) -> AutocompleteSuggestion? {
+    public func getSuggestions(lines: [String], cursorLine: Int, cursorCol: Int)
+        -> AutocompleteSuggestion?
+    {
         guard lines.indices.contains(cursorLine) else { return nil }
         let currentLine = lines[cursorLine]
-        let prefixIndex = currentLine.index(currentLine.startIndex, offsetBy: min(cursorCol, currentLine.count))
+        let prefixIndex = currentLine.index(
+            currentLine.startIndex, offsetBy: min(cursorCol, currentLine.count))
         let textBeforeCursor = String(currentLine[..<prefixIndex])
 
         if textBeforeCursor.hasPrefix("/") {
@@ -113,8 +125,8 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
         cursorLine: Int,
         cursorCol: Int,
         item: AutocompleteItem,
-        prefix: String) -> (lines: [String], cursorLine: Int, cursorCol: Int)
-    {
+        prefix: String
+    ) -> (lines: [String], cursorLine: Int, cursorCol: Int) {
         guard lines.indices.contains(cursorLine) else { return (lines, cursorLine, cursorCol) }
         var mutableLines = lines
         var currentLine = lines[cursorLine]
@@ -131,13 +143,16 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
     public func forceFileSuggestions(
         lines: [String],
         cursorLine: Int,
-        cursorCol: Int) -> AutocompleteSuggestion?
-    {
+        cursorCol: Int
+    ) -> AutocompleteSuggestion? {
         guard lines.indices.contains(cursorLine) else { return nil }
         let currentLine = lines[cursorLine]
-        let prefixIndex = currentLine.index(currentLine.startIndex, offsetBy: min(cursorCol, currentLine.count))
+        let prefixIndex = currentLine.index(
+            currentLine.startIndex, offsetBy: min(cursorCol, currentLine.count))
         let textBeforeCursor = String(currentLine[..<prefixIndex])
-        guard let context = self.extractPathPrefix(from: textBeforeCursor, force: true) else { return nil }
+        guard let context = self.extractPathPrefix(from: textBeforeCursor, force: true) else {
+            return nil
+        }
         let items = self.fileSuggestions(for: context)
         guard !items.isEmpty else { return nil }
         return AutocompleteSuggestion(items: items, prefix: context.token)
@@ -146,11 +161,12 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
     public func shouldTriggerFileCompletion(
         lines: [String],
         cursorLine: Int,
-        cursorCol: Int) -> Bool
-    {
+        cursorCol: Int
+    ) -> Bool {
         guard lines.indices.contains(cursorLine) else { return true }
         let currentLine = lines[cursorLine]
-        let prefixIndex = currentLine.index(currentLine.startIndex, offsetBy: min(cursorCol, currentLine.count))
+        let prefixIndex = currentLine.index(
+            currentLine.startIndex, offsetBy: min(cursorCol, currentLine.count))
         let textBeforeCursor = String(currentLine[..<prefixIndex])
         if textBeforeCursor.hasPrefix("/"), !textBeforeCursor.contains(" ") {
             return false
@@ -176,21 +192,29 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
     private func slashCommandSuggestions(textBeforeCursor: String) -> AutocompleteSuggestion? {
         if let spaceIndex = textBeforeCursor.firstIndex(of: " ") {
             let commandName =
-                String(textBeforeCursor[textBeforeCursor.index(after: textBeforeCursor.startIndex)..<spaceIndex])
-            guard let command = commands.first(where: { $0.name == commandName }) else { return nil }
-            let argumentText = String(textBeforeCursor[textBeforeCursor.index(after: spaceIndex)...])
+                String(
+                    textBeforeCursor[
+                        textBeforeCursor.index(after: textBeforeCursor.startIndex)..<spaceIndex])
+            guard let command = commands.first(where: { $0.name == commandName }) else {
+                return nil
+            }
+            let argumentText = String(
+                textBeforeCursor[textBeforeCursor.index(after: spaceIndex)...])
             let items = command.argumentCompletions(prefix: argumentText)
             return items.isEmpty ? nil : AutocompleteSuggestion(items: items, prefix: argumentText)
         } else {
             let prefixText = String(textBeforeCursor.dropFirst())
             var items = self.commands
                 .filter { $0.name.lowercased().hasPrefix(prefixText.lowercased()) }
-                .map { AutocompleteItem(value: $0.name, label: $0.name, description: $0.description) }
+                .map {
+                    AutocompleteItem(value: $0.name, label: $0.name, description: $0.description)
+                }
             let inlineMatches = self.staticCommands.filter {
                 $0.value.lowercased().hasPrefix(prefixText.lowercased())
             }
             items.append(contentsOf: inlineMatches)
-            return items.isEmpty ? nil : AutocompleteSuggestion(items: items, prefix: textBeforeCursor)
+            return items.isEmpty
+                ? nil : AutocompleteSuggestion(items: items, prefix: textBeforeCursor)
         }
     }
 
@@ -203,15 +227,15 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
     private func extractPathPrefix(from text: String, force: Bool) -> PathContext? {
         let fullRange = NSRange(location: 0, length: text.utf16.count)
         if let attachmentRegex,
-           let match = attachmentRegex.firstMatch(in: text, options: [], range: fullRange),
-           let range = Range(match.range, in: text)
+            let match = attachmentRegex.firstMatch(in: text, options: [], range: fullRange),
+            let range = Range(match.range, in: text)
         {
             return PathContext(token: String(text[range]), isAttachment: true, forced: force)
         }
 
         if let pathRegex,
-           let match = pathRegex.firstMatch(in: text, options: [], range: fullRange),
-           let captureRange = Range(match.range(at: 1), in: text)
+            let match = pathRegex.firstMatch(in: text, options: [], range: fullRange),
+            let captureRange = Range(match.range(at: 1), in: text)
         {
             let token = String(text[captureRange])
             if token.isEmpty, !force {
@@ -258,8 +282,10 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
                 if !shouldBypassPrefix, !name.lowercased().hasPrefix(searchPrefix.lowercased()) {
                     continue
                 }
-                let isDirectory = (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
-                if context.isAttachment, !isDirectory, !FileAttachmentFilter.isAttachable(url: url) {
+                let isDirectory =
+                    (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
+                if context.isAttachment, !isDirectory, !FileAttachmentFilter.isAttachable(url: url)
+                {
                     continue
                 }
                 let valuePath = self.buildCompletionPath(
@@ -269,7 +295,8 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
                     context: context)
                 let label = name + (isDirectory ? "/" : "")
                 let description = isDirectory ? "directory" : "file"
-                items.append(AutocompleteItem(value: valuePath, label: label, description: description))
+                items.append(
+                    AutocompleteItem(value: valuePath, label: label, description: description))
             }
             return items.sorted { lhs, rhs in
                 switch (lhs.description == "directory", rhs.description == "directory") {
@@ -302,8 +329,8 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
         typedToken: String,
         component: String,
         isDirectory: Bool,
-        context: PathContext) -> String
-    {
+        context: PathContext
+    ) -> String {
         var base = typedToken
         if base.isEmpty || base.hasSuffix("/") {
             base += component
