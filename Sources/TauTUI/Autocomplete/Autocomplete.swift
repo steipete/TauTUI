@@ -21,6 +21,11 @@ public protocol SlashCommand {
 public struct AutocompleteSuggestion {
     public let items: [AutocompleteItem]
     public let prefix: String
+
+    public init(items: [AutocompleteItem], prefix: String) {
+        self.items = items
+        self.prefix = prefix
+    }
 }
 
 public protocol AutocompleteProvider {

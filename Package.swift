@@ -67,4 +67,8 @@ let package = Package(
             name: "TauTUITests",
             dependencies: ["TauTUI", "TauTUIInternal"],
             path: "Tests/TauTUITests"),
+        .testTarget(
+            name: "TauTUIExternalClientTests",
+            dependencies: ["TauTUI"],
+            path: "Tests/TauTUIExternalClientTests"),
     ])
