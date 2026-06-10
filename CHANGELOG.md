@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+- Autocomplete suggestions can now be constructed by external TauTUI clients. Thanks @dcartman.
 - Autocomplete no longer inserts a duplicate `@` when completing attachment paths. Thanks @DivineDominion.
 - Select-list descriptions now align consistently for selected and unselected rows. Thanks @DivineDominion.
 
