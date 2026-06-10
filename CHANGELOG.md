@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - Unreleased
+
 ## [0.2.0] - 2026-06-10
 - Autocomplete suggestions can now be constructed by external TauTUI clients. Thanks @dcartman.
 - Autocomplete no longer inserts a duplicate `@` when completing attachment paths. Thanks @DivineDominion.
