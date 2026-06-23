@@ -9,10 +9,10 @@ jobs:
   lint:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Swift 6.2
-        uses: SwiftyLab/setup-swift@v1
+        uses: SwiftyLab/setup-swift@v1.14.0
         with:
           swift-version: "6.2"
 
@@ -35,10 +35,10 @@ jobs:
     needs: lint
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Swift 6.2
-        uses: SwiftyLab/setup-swift@v1
+        uses: SwiftyLab/setup-swift@v1.14.0
         with:
           swift-version: "6.2"
 
