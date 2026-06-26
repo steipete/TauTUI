@@ -40,6 +40,14 @@ struct TruncatedTextTests {
     }
 
     @Test
+    func `does not overflow when width is below the ellipsis width`() {
+        let text = TruncatedText(text: "Hello world", paddingX: 0, paddingY: 0)
+        let lines = text.render(width: 2)
+        #expect(lines.count == 1)
+        #expect(VisibleWidth.measure(lines[0]) == 2)
+    }
+
+    @Test
     func `handles empty text`() {
         let text = TruncatedText(text: "", paddingX: 1, paddingY: 0)
         let lines = text.render(width: 30)
