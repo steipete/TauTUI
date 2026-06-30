@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [0.2.1] - Unreleased
-- TruncatedText no longer emits a full three-dot ellipsis when the available width is 1 or 2, which had made the rendered line wider than the requested width; it now fills with as many dots as fit, matching the public `truncate` helper.
+- TruncatedText no longer emits a full three-dot ellipsis when the available width is 1 or 2, which had made the rendered line wider than the requested width; it now fills with as many dots as fit, matching the public `truncate` helper. Thanks @devYRPauli.
 
 ## [0.2.0] - 2026-06-10
 - Autocomplete suggestions can now be constructed by external TauTUI clients. Thanks @dcartman.
