@@ -50,6 +50,10 @@ public final class TruncatedText: Component {
         guard visible > maxVisibleWidth else { return firstLine }
 
         let target = max(0, maxVisibleWidth - 3) // space for "..."
+        if target <= 0 {
+            // Not enough room for the full ellipsis; fill with as many dots as fit.
+            return "\u{001B}[0m" + String(repeating: ".", count: maxVisibleWidth)
+        }
         var currentWidth = 0
         var truncateAt = firstLine.startIndex
         var index = firstLine.startIndex
