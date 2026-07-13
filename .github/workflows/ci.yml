@@ -18,6 +18,7 @@ jobs:
 
       - name: Install linters (SwiftLint & SwiftFormat)
         run: |
+          brew update
           brew install swiftlint swiftformat
 
       - name: SwiftLint
