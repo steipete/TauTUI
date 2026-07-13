@@ -11,10 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Swift 6.2
+      - name: Install Swift 6.3.3
         uses: SwiftyLab/setup-swift@v1.14.0
         with:
-          swift-version: "6.2"
+          swift-version: "6.3.3"
 
       - name: Install linters (SwiftLint & SwiftFormat)
         run: |
@@ -31,16 +31,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        swift-version: ["6.2", "6.3.3"]
     runs-on: ${{ matrix.os }}
     needs: lint
 
     steps:
       - uses: actions/checkout@v7
 
-      - name: Install Swift 6.2
+      - name: Install Swift ${{ matrix.swift-version }}
         uses: SwiftyLab/setup-swift@v1.14.0
         with:
-          swift-version: "6.2"
+          swift-version: ${{ matrix.swift-version }}
 
       - name: Show Swift version
         run: swift --version
