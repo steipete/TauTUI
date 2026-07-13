@@ -29,6 +29,7 @@
 --wrapparameters before-first
 --wrapcollections before-first
 --closingparen same-line
+--disable wrapIfStatementBodies
 
 # Organization
 --organizetypes class,struct,enum,extension
