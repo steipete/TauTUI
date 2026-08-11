@@ -212,19 +212,51 @@ public final class Input: Component {
     }
 
     private func windowedValue(available: Int) -> (String, Int) {
-        if self.value.count <= available {
+        let totalWidth = VisibleWidth.measure(self.value)
+        let cursorAtEnd = self.cursor == self.value.count
+        let cursorWidth = cursorAtEnd ? 1 : 0
+        if totalWidth + cursorWidth <= available {
             return (self.value, self.cursor)
         }
-        let cursorAtEnd = self.cursor == self.value.count
+
         let scrollWidth = cursorAtEnd ? available - 1 : available
+        guard scrollWidth > 0 else { return ("", 0) }
+
+        let beforeCursor = String(self.value.prefix(self.cursor))
+        let cursorColumn = VisibleWidth.measure(beforeCursor)
         let half = scrollWidth / 2
-        var startIndex = self.cursor - half
-        startIndex = max(0, min(startIndex, self.value.count - scrollWidth))
-        let start = self.value.index(self.value.startIndex, offsetBy: startIndex)
-        let end = self.value.index(start, offsetBy: min(scrollWidth, self.value.count - startIndex))
-        let visible = String(value[start..<end])
-        let cursorDisplay = cursorAtEnd ? visible.count : self.cursor - startIndex
+        let startColumn = if cursorColumn < half {
+            0
+        } else if cursorColumn > totalWidth - half {
+            max(0, totalWidth - scrollWidth)
+        } else {
+            max(0, cursorColumn - half)
+        }
+
+        let visible = self.sliceByColumns(self.value, start: startColumn, width: scrollWidth)
+        let visibleBeforeCursor = self.sliceByColumns(
+            self.value,
+            start: startColumn,
+            width: max(0, cursorColumn - startColumn))
+        let cursorDisplay = visibleBeforeCursor.count
         return (visible, cursorDisplay)
+    }
+
+    private func sliceByColumns(_ text: String, start: Int, width: Int) -> String {
+        guard width > 0 else { return "" }
+
+        let end = start + width
+        var column = 0
+        var result = ""
+        for grapheme in text {
+            let graphemeWidth = VisibleWidth.measure(String(grapheme))
+            if column >= start, column < end, column + graphemeWidth <= end {
+                result.append(grapheme)
+            }
+            column += graphemeWidth
+            if column >= end { break }
+        }
+        return result
     }
 
     @MainActor public func apply(theme: ThemePalette) {

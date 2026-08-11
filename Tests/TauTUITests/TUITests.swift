@@ -88,6 +88,55 @@ struct TUIRenderingTests {
     }
 
     @MainActor @Test
+    func `rendering no lines clears all previous lines`() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        let tui = TUI(terminal: terminal, renderScheduler: { $0() })
+        let component = DummyComponent(lines: ["one", "two", "three"])
+        tui.addChild(component)
+        try tui.start()
+
+        component.lines = []
+        tui.requestRender()
+
+        let last = terminal.outputLog.last ?? ""
+        #expect(last.components(separatedBy: "\u{001B}[2K").count - 1 == 3)
+    }
+
+    @MainActor @Test
+    func `queued render does not write after stop`() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        var scheduledRenders: [@MainActor @Sendable () -> Void] = []
+        let tui = TUI(terminal: terminal, renderScheduler: { scheduledRenders.append($0) })
+        tui.addChild(DummyComponent(lines: ["Hello"]))
+        try tui.start()
+        #expect(scheduledRenders.count == 1)
+
+        tui.stop()
+        let outputAfterStop = terminal.outputLog
+        scheduledRenders.removeFirst()()
+
+        #expect(terminal.outputLog == outputAfterStop)
+    }
+
+    @MainActor @Test
+    func `restart ignores a queued render from the previous session`() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        var scheduledRenders: [@MainActor @Sendable () -> Void] = []
+        let tui = TUI(terminal: terminal, renderScheduler: { scheduledRenders.append($0) })
+        tui.addChild(DummyComponent(lines: ["Hello"]))
+        try tui.start()
+        tui.stop()
+        try tui.start()
+        #expect(scheduledRenders.count == 2)
+
+        scheduledRenders.removeFirst()()
+        #expect(!terminal.outputLog.contains(where: { $0.contains("Hello") }))
+
+        scheduledRenders.removeFirst()()
+        #expect(terminal.outputLog.contains(where: { $0.contains("Hello") }))
+    }
+
+    @MainActor @Test
     func `control C invokes handler and skips focused component`() throws {
         let terminal = VirtualTerminal(columns: 20, rows: 5)
         let tui = TUI(terminal: terminal, renderScheduler: { $0() })
@@ -187,5 +236,20 @@ struct TUIRenderingTests {
         let parser = ProcessTerminal()
         let events = parser.parseForTests("\n")
         #expect(events.contains(where: { if case .key(.enter, _) = $0 { return true }; return false }))
+    }
+
+    @Test
+    func `stopping an unstarted process terminal does not write terminal control sequences`() throws {
+        let outputPipe = Pipe()
+        do {
+            let terminal = ProcessTerminal(
+                inputFileDescriptor: FileHandle.standardInput.fileDescriptor,
+                outputFileDescriptor: outputPipe.fileHandleForWriting.fileDescriptor)
+            terminal.stop()
+        }
+        try outputPipe.fileHandleForWriting.close()
+
+        let output = outputPipe.fileHandleForReading.readDataToEndOfFile()
+        #expect(output.isEmpty)
     }
 }
