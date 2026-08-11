@@ -74,8 +74,8 @@ public enum TerminalError: Error {
 // MARK: - ProcessTerminal
 
 public final class ProcessTerminal: Terminal {
-    private let inputFD = FileDescriptor.standardInput
-    private let outputFD = FileDescriptor.standardOutput
+    private let inputFD: FileDescriptor
+    private let outputFD: FileDescriptor
 
     private var stdinSource: DispatchSourceRead?
     private var resizeSource: DispatchSourceSignal?
@@ -84,6 +84,7 @@ public final class ProcessTerminal: Terminal {
 
     private var originalTermios = termios()
     private var rawModeEnabled = false
+    private var terminalModesEnabled = false
 
     private var pendingInput = ""
     private var isInBracketedPaste = false
@@ -106,7 +107,16 @@ public final class ProcessTerminal: Terminal {
     private static let optionEnterCSI = "\u{001B}[13;3~"
     private static let optionEnterMeta = "\u{001B}\r"
 
-    public init() {}
+    public convenience init() {
+        self.init(
+            inputFileDescriptor: FileDescriptor.standardInput.rawValue,
+            outputFileDescriptor: FileDescriptor.standardOutput.rawValue)
+    }
+
+    init(inputFileDescriptor: Int32, outputFileDescriptor: Int32) {
+        self.inputFD = FileDescriptor(rawValue: inputFileDescriptor)
+        self.outputFD = FileDescriptor(rawValue: outputFileDescriptor)
+    }
 
     /// Testing helper: parse a raw input string into `TerminalInput` events
     /// without starting Dispatch sources. Only used in unit tests.
@@ -133,6 +143,7 @@ public final class ProcessTerminal: Terminal {
         try self.enableRawMode()
         self.write("\u{001B}[?2004h") // bracketed paste on
         self.write(Self.kittyKeyboardProtocolEnable) // kitty keyboard protocol on
+        self.terminalModesEnabled = true
 
         let source = DispatchSource.makeReadSource(fileDescriptor: self.inputFD.rawValue, queue: .main)
         source.setEventHandler { [weak self] in
@@ -168,8 +179,11 @@ public final class ProcessTerminal: Terminal {
         self.resizeSource?.cancel()
         self.resizeSource = nil
 
-        self.write("\u{001B}[?2004l") // bracketed paste off
-        self.write(Self.kittyKeyboardProtocolDisable) // kitty keyboard protocol off
+        if self.terminalModesEnabled {
+            self.write("\u{001B}[?2004l") // bracketed paste off
+            self.write(Self.kittyKeyboardProtocolDisable) // kitty keyboard protocol off
+            self.terminalModesEnabled = false
+        }
         self.disableRawMode()
 
         self.inputHandler = nil

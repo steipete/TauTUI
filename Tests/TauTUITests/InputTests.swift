@@ -76,4 +76,45 @@ struct InputTests {
         input.handle(input: .key(.character("Y")))
         #expect(input.value == "hello XworldY")
     }
+
+    @Test
+    func `render does not overflow with wide text at any cursor position`() {
+        let width = 20
+        let values = [
+            "가나다라마바사아자차카타파하",
+            "これは日本語のテキストです",
+            "ＡＢＣＤＥＦＧＨＩＪＫＬ",
+        ]
+
+        for value in values {
+            let atStart = Input(value: value)
+            atStart.handle(input: .key(.home))
+
+            let inMiddle = Input(value: value)
+            inMiddle.handle(input: .key(.home))
+            for _ in 0..<5 {
+                inMiddle.handle(input: .key(.arrowRight))
+            }
+
+            let atEnd = Input(value: value)
+
+            for input in [atStart, inMiddle, atEnd] {
+                let line = input.render(width: width)[0]
+                #expect(VisibleWidth.measure(line) <= width)
+            }
+        }
+    }
+
+    @Test
+    func `render keeps the cursor on a whole grapheme`() {
+        let family = "👨‍👩‍👧‍👦"
+        let input = Input(value: "a\(family)b")
+        input.handle(input: .key(.home))
+        input.handle(input: .key(.arrowRight))
+
+        let line = input.render(width: 8)[0]
+
+        #expect(line.contains("\u{001B}[7m\(family)\u{001B}[27m"))
+        #expect(VisibleWidth.measure(line) <= 8)
+    }
 }

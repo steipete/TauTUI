@@ -18,6 +18,8 @@ public final class TUI: Container {
     private var previousWidth: Int = 0
     private var cursorRow: Int = 0
     private var renderRequested = false
+    private var isRunning = false
+    private var sessionGeneration: UInt = 0
 
     /// Called when Ctrl+C is received. If unset, Ctrl+C will stop the terminal and call `exit(0)`.
     public var onControlC: (@MainActor @Sendable () -> Void)?
@@ -43,12 +45,21 @@ public final class TUI: Container {
         }, onResize: { [weak self] in
             self?.requestRender()
         })
+        self.isRunning = true
+        self.sessionGeneration &+= 1
         self.terminal.hideCursor()
         self.queryCellSizeIfNeeded()
         self.requestRender()
     }
 
     public func stop() {
+        guard self.isRunning else { return }
+        self.isRunning = false
+        self.sessionGeneration &+= 1
+        self.renderRequested = false
+        self.previousLines = []
+        self.previousWidth = 0
+        self.cursorRow = 0
         self.terminal.showCursor()
         self.terminal.stop()
     }
@@ -61,10 +72,12 @@ public final class TUI: Container {
     }
 
     public func requestRender() {
+        guard self.isRunning else { return }
         guard !self.renderRequested else { return }
         self.renderRequested = true
+        let generation = self.sessionGeneration
         self.scheduleRender { @MainActor [weak self] in
-            guard let self else { return }
+            guard let self, self.isRunning, self.sessionGeneration == generation else { return }
             self.renderRequested = false
             self.performRender()
         }
@@ -112,6 +125,9 @@ public final class TUI: Container {
         let newLines = render(width: width)
 
         guard !newLines.isEmpty else {
+            if !self.previousLines.isEmpty {
+                self.writePartialRender(lines: [""], from: 0)
+            }
             self.previousLines = []
             self.previousWidth = width
             self.cursorRow = 0
