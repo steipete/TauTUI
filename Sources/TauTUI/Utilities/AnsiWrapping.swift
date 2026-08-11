@@ -9,7 +9,10 @@ public enum AnsiWrapping {
         guard width > 0 else { return [""] }
         guard !text.isEmpty else { return [""] }
 
-        let normalized = Ansi.normalizeTabs(text, spacesPerTab: tabSize)
+        let normalizedLineEndings = text
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+        let normalized = Ansi.normalizeTabs(normalizedLineEndings, spacesPerTab: tabSize)
         let inputLines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         var result: [String] = []

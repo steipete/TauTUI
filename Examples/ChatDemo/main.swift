@@ -43,7 +43,8 @@ struct ChatDemo {
         vm.tui.addChild(vm.editor)
         vm.tui.setFocus(vm.editor)
 
-        vm.editor.onSubmit = { value in
+        vm.editor.onSubmit = { [weak vm] value in
+            guard let vm else { return }
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
 
