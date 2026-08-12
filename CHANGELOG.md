@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Input scrolling now uses terminal columns so CJK, fullwidth, and emoji text cannot overflow the viewport.
 - ProcessTerminal shutdown is now idempotent and no longer writes terminal-mode resets when the terminal was never started.
 - TUI sessions no longer render after shutdown, reuse stale render state after restart, or leave old rows visible when content becomes empty.
+- Partial TUI updates now clear removed trailing rows, including empty spacer rows, without leaving stale terminal content behind.
 - Height-only terminal resizes now trigger a full redraw so the main-screen viewport stays aligned.
 
 ## [0.2.1] - 2026-07-15

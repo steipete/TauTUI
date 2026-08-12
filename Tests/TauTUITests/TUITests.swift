@@ -99,8 +99,26 @@ struct TUIRenderingTests {
         tui.requestRender()
 
         let last = terminal.outputLog.last ?? ""
-        #expect(last.contains("\u{001B}[2K"))
-        #expect(last.contains("\u{001B}[2A"))
+        let expectedClear = ANSI.carriageReturn + ANSI.clearLine + "\r\n" + ANSI.clearLine + ANSI.cursorUp(2)
+        #expect(last.contains(expectedClear))
+    }
+
+    @MainActor @Test
+    func `partial diff clears a removed trailing empty line`() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        let tui = TUI(terminal: terminal, renderScheduler: { $0() })
+        let component = DummyComponent(lines: ["one", ""])
+        tui.addChild(component)
+        try tui.start()
+        let writesBeforeRemoval = terminal.outputLog.count
+
+        component.lines = ["one"]
+        tui.requestRender()
+
+        #expect(terminal.outputLog.count == writesBeforeRemoval + 1)
+        let last = terminal.outputLog.last ?? ""
+        let expectedClear = ANSI.carriageReturn + ANSI.clearLine + ANSI.cursorUp(1)
+        #expect(last.contains(expectedClear))
     }
 
     @MainActor @Test
