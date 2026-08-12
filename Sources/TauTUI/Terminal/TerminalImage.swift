@@ -123,6 +123,12 @@ public enum TerminalImage {
         self.storage.lock.unlock()
     }
 
+    static func setCapabilitiesForTests(_ capabilities: TerminalCapabilities) {
+        self.storage.lock.lock()
+        self.storage.cachedCapabilities = capabilities
+        self.storage.lock.unlock()
+    }
+
     public static func encodeKitty(
         base64Data: String,
         columns: Int? = nil,
@@ -192,20 +198,34 @@ public enum TerminalImage {
         targetWidthCells: Int,
         cellDimensions: CellDimensions = .init(widthPx: 9, heightPx: 18)) -> Int
     {
-        guard targetWidthCells > 0,
-              imageDimensions.widthPx > 0,
-              imageDimensions.heightPx > 0,
-              cellDimensions.widthPx > 0,
-              cellDimensions.heightPx > 0
-        else {
-            return 1
-        }
+        self.calculateImageCellSize(
+            imageDimensions: imageDimensions,
+            maxWidthCells: targetWidthCells,
+            cellDimensions: cellDimensions).rows
+    }
 
-        let targetWidthPx = targetWidthCells * cellDimensions.widthPx
-        let scale = Double(targetWidthPx) / Double(imageDimensions.widthPx)
-        let scaledHeightPx = Double(imageDimensions.heightPx) * scale
-        let rows = Int(ceil(scaledHeightPx / Double(cellDimensions.heightPx)))
-        return max(1, rows)
+    static func calculateImageCellSize(
+        imageDimensions: ImageDimensions,
+        maxWidthCells: Int,
+        maxHeightCells: Int? = nil,
+        cellDimensions: CellDimensions = .init(widthPx: 9, heightPx: 18)) -> (columns: Int, rows: Int)
+    {
+        let maxWidth = max(1, maxWidthCells)
+        let maxHeight = maxHeightCells.map { max(1, $0) }
+        let imageWidth = max(1, imageDimensions.widthPx)
+        let imageHeight = max(1, imageDimensions.heightPx)
+        let cellWidth = max(1, cellDimensions.widthPx)
+        let cellHeight = max(1, cellDimensions.heightPx)
+
+        let widthScale = Double(maxWidth * cellWidth) / Double(imageWidth)
+        let heightScale = maxHeight.map { Double($0 * cellHeight) / Double(imageHeight) } ?? widthScale
+        let scale = min(widthScale, heightScale)
+        let columns = Int(ceil(Double(imageWidth) * scale / Double(cellWidth)))
+        let rows = Int(ceil(Double(imageHeight) * scale / Double(cellHeight)))
+
+        return (
+            columns: max(1, min(maxWidth, columns)),
+            rows: max(1, maxHeight.map { min($0, rows) } ?? rows))
     }
 
     public static func getImageDimensions(base64Data: String, mimeType: String) -> ImageDimensions? {
@@ -231,24 +251,24 @@ public enum TerminalImage {
         let caps = self.getCapabilities()
         guard let images = caps.images else { return nil }
 
-        let maxWidth = options.maxWidthCells ?? 80
-        let rows = self.calculateImageRows(
+        let size = self.calculateImageCellSize(
             imageDimensions: imageDimensions,
-            targetWidthCells: maxWidth,
+            maxWidthCells: options.maxWidthCells ?? 80,
+            maxHeightCells: options.maxHeightCells,
             cellDimensions: self.getCellDimensions())
 
         switch images {
         case .kitty:
-            let sequence = self.encodeKitty(base64Data: base64Data, columns: maxWidth, rows: rows)
-            return (sequence: sequence, rows: rows)
+            let sequence = self.encodeKitty(base64Data: base64Data, columns: size.columns, rows: size.rows)
+            return (sequence: sequence, rows: size.rows)
         case .iterm2:
             let sequence = self.encodeITerm2(
                 base64Data: base64Data,
-                width: "\(maxWidth)",
+                width: "\(size.columns)",
                 height: "auto",
                 preserveAspectRatio: options.preserveAspectRatio ?? true,
                 inline: true)
-            return (sequence: sequence, rows: rows)
+            return (sequence: sequence, rows: size.rows)
         }
     }
 

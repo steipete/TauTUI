@@ -57,6 +57,11 @@ public final class Image: Component {
         }
 
         let maxWidth = max(1, min(max(0, width - 2), self.options.maxWidthCells ?? 60))
+        let cellDimensions = TerminalImage.getCellDimensions()
+        let cellWidth = max(1, cellDimensions.widthPx)
+        let cellHeight = max(1, cellDimensions.heightPx)
+        let defaultMaxHeight = max(1, (maxWidth * cellWidth + cellHeight - 1) / cellHeight)
+        let maxHeight = self.options.maxHeightCells ?? defaultMaxHeight
 
         let caps = TerminalImage.getCapabilities()
         let lines: [String]
@@ -65,7 +70,7 @@ public final class Image: Component {
            let result = TerminalImage.renderImage(
                base64Data: self.base64Data,
                imageDimensions: self.dimensions,
-               options: .init(maxWidthCells: maxWidth))
+               options: .init(maxWidthCells: maxWidth, maxHeightCells: maxHeight))
         {
             var buffer: [String] = []
             buffer.reserveCapacity(result.rows)
