@@ -16,6 +16,7 @@ public final class TUI: Container {
 
     private var previousLines: [String] = []
     private var previousWidth: Int = 0
+    private var previousHeight: Int = 0
     private var cursorRow: Int = 0
     private var renderRequested = false
     private var isRunning = false
@@ -59,6 +60,7 @@ public final class TUI: Container {
         self.renderRequested = false
         self.previousLines = []
         self.previousWidth = 0
+        self.previousHeight = 0
         self.cursorRow = 0
         self.terminal.showCursor()
         self.terminal.stop()
@@ -128,25 +130,19 @@ public final class TUI: Container {
             if !self.previousLines.isEmpty {
                 self.writePartialRender(lines: [""], from: 0)
             }
-            self.previousLines = []
-            self.previousWidth = width
-            self.cursorRow = 0
+            self.recordRenderState(lines: [], width: width, height: height)
             return
         }
 
         if self.previousLines.isEmpty {
             self.writeFullRender(newLines)
-            self.previousLines = newLines
-            self.previousWidth = width
-            self.cursorRow = newLines.count - 1
+            self.recordRenderState(lines: newLines, width: width, height: height)
             return
         }
 
-        if self.previousWidth != width {
+        if self.previousWidth != width || self.previousHeight != height {
             self.writeFullRender(newLines, clear: true)
-            self.previousLines = newLines
-            self.previousWidth = width
-            self.cursorRow = newLines.count - 1
+            self.recordRenderState(lines: newLines, width: width, height: height)
             return
         }
 
@@ -157,16 +153,19 @@ public final class TUI: Container {
         let viewportTop = self.cursorRow - height + 1
         if diffRange.lowerBound < viewportTop {
             self.writeFullRender(newLines, clear: true)
-            self.previousLines = newLines
-            self.previousWidth = width
-            self.cursorRow = newLines.count - 1
+            self.recordRenderState(lines: newLines, width: width, height: height)
             return
         }
 
         self.writePartialRender(lines: newLines, from: diffRange.lowerBound)
-        self.previousLines = newLines
+        self.recordRenderState(lines: newLines, width: width, height: height)
+    }
+
+    private func recordRenderState(lines: [String], width: Int, height: Int) {
+        self.previousLines = lines
         self.previousWidth = width
-        self.cursorRow = newLines.count - 1
+        self.previousHeight = height
+        self.cursorRow = max(0, lines.count - 1)
     }
 
     private func computeDiffRange(old: [String], new: [String]) -> Range<Int>? {
