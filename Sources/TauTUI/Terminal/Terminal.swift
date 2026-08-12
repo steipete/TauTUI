@@ -86,9 +86,11 @@ public final class ProcessTerminal: Terminal {
     private var rawModeEnabled = false
     private var terminalModesEnabled = false
 
+    private var pendingUTF8Bytes: [UInt8] = []
     private var pendingInput = ""
     private var isInBracketedPaste = false
     private var pasteBuffer = ""
+    private var escapeFlushWorkItem: DispatchWorkItem?
 
     /// Emit `.raw` events for debugging/inspection (e.g. KeyTester).
     /// Off by default because `.key`/`.paste` already cover functional input.
@@ -123,7 +125,17 @@ public final class ProcessTerminal: Terminal {
     func parseForTests(_ raw: String) -> [TerminalInput] {
         var captured: [TerminalInput] = []
         self.inputHandler = { captured.append($0) }
-        self.handleRawChunk(raw)
+        self.handleRawBytes(Array(raw.utf8))
+        return captured
+    }
+
+    /// Testing helper: parse byte chunks exactly as the descriptor reader receives them.
+    func parseBytesForTests(_ chunks: [[UInt8]]) -> [TerminalInput] {
+        var captured: [TerminalInput] = []
+        self.inputHandler = { captured.append($0) }
+        for chunk in chunks {
+            self.handleRawBytes(chunk)
+        }
         return captured
     }
 
@@ -157,9 +169,7 @@ public final class ProcessTerminal: Terminal {
                 }
             }
             guard byteCount > 0 else { return }
-            if let string = String(bytes: buffer.prefix(byteCount), encoding: .utf8) {
-                self.handleRawChunk(string)
-            }
+            self.handleRawBytes(Array(buffer.prefix(byteCount)))
         }
         source.resume()
         self.stdinSource = source
@@ -188,6 +198,9 @@ public final class ProcessTerminal: Terminal {
 
         self.inputHandler = nil
         self.resizeHandler = nil
+        self.escapeFlushWorkItem?.cancel()
+        self.escapeFlushWorkItem = nil
+        self.pendingUTF8Bytes.removeAll(keepingCapacity: false)
         self.pendingInput.removeAll(keepingCapacity: false)
         self.pasteBuffer.removeAll(keepingCapacity: false)
         self.isInBracketedPaste = false
@@ -257,8 +270,64 @@ public final class ProcessTerminal: Terminal {
 
     // MARK: - Input parsing
 
+    private func handleRawBytes(_ bytes: [UInt8]) {
+        guard !bytes.isEmpty else { return }
+        self.pendingUTF8Bytes.append(contentsOf: bytes)
+
+        let prefixLength = self.completeUTF8PrefixLength()
+        guard prefixLength > 0 else { return }
+
+        // Malformed bytes intentionally decode as replacement characters so one bad byte
+        // cannot stall the stream behind it.
+        // swiftlint:disable:next optional_data_string_conversion
+        let decoded = String(decoding: self.pendingUTF8Bytes.prefix(prefixLength), as: UTF8.self)
+        self.pendingUTF8Bytes.removeFirst(prefixLength)
+        self.handleRawChunk(decoded)
+    }
+
+    /// Returns the byte count that can be decoded without consuming a trailing partial scalar.
+    private func completeUTF8PrefixLength() -> Int {
+        var index = 0
+        while index < self.pendingUTF8Bytes.count {
+            let byte = self.pendingUTF8Bytes[index]
+            let sequenceLength: Int
+            switch byte {
+            case 0x00...0x7F:
+                sequenceLength = 1
+            case 0xC2...0xDF:
+                sequenceLength = 2
+            case 0xE0...0xEF:
+                sequenceLength = 3
+            case 0xF0...0xF4:
+                sequenceLength = 4
+            default:
+                // Decode malformed standalone bytes as replacement characters instead of
+                // retaining them forever and blocking all subsequent terminal input.
+                index += 1
+                continue
+            }
+
+            guard index + sequenceLength <= self.pendingUTF8Bytes.count else {
+                return index
+            }
+
+            let continuationStart = index + 1
+            let hasValidContinuations = continuationStart == index + sequenceLength ||
+                self.pendingUTF8Bytes[continuationStart..<(index + sequenceLength)]
+                .allSatisfy { $0 & 0xC0 == 0x80 }
+            if hasValidContinuations {
+                index += sequenceLength
+            } else {
+                index += 1
+            }
+        }
+        return index
+    }
+
     fileprivate func handleRawChunk(_ chunk: String) {
         guard !chunk.isEmpty else { return }
+        self.escapeFlushWorkItem?.cancel()
+        self.escapeFlushWorkItem = nil
         if self.emitsRawInputEvents {
             self.inputHandler?(.raw(chunk))
         }
@@ -282,8 +351,14 @@ public final class ProcessTerminal: Terminal {
                     self.pasteBuffer.removeAll(keepingCapacity: false)
                     continue
                 } else {
-                    self.pasteBuffer.append(self.pendingInput)
-                    self.pendingInput.removeAll(keepingCapacity: false)
+                    // A descriptor read may split the paste terminator at any byte. Retain
+                    // the longest possible delimiter prefix and commit only safe content.
+                    let retainedCount = self.trailingPasteEndPrefixLength()
+                    let contentCount = self.pendingInput.count - retainedCount
+                    if contentCount > 0 {
+                        self.pasteBuffer.append(String(self.pendingInput.prefix(contentCount)))
+                        self.pendingInput.removeFirstCharacters(contentCount)
+                    }
                     return
                 }
             }
@@ -322,9 +397,41 @@ public final class ProcessTerminal: Terminal {
                 continue
             }
 
+            if self.pendingInput.first == "\u{001B}" {
+                // CSI, SS3, paste, and Meta sequences may span descriptor reads. Delay a
+                // lone/incomplete ESC briefly so a real Escape key still resolves.
+                self.scheduleIncompleteEscapeFlush()
+                return
+            }
+
             let char = self.pendingInput.removeFirst()
             self.handleCharacter(char)
         }
+    }
+
+    private func trailingPasteEndPrefixLength() -> Int {
+        let maxLength = min(self.pendingInput.count, Self.bracketedPasteEnd.count - 1)
+        guard maxLength > 0 else { return 0 }
+        for length in stride(from: maxLength, through: 1, by: -1)
+            where Self.bracketedPasteEnd.hasPrefix(self.pendingInput.suffix(length))
+        {
+            return length
+        }
+        return 0
+    }
+
+    private func scheduleIncompleteEscapeFlush() {
+        guard self.escapeFlushWorkItem == nil else { return }
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.escapeFlushWorkItem = nil
+            guard self.pendingInput.first == "\u{001B}" else { return }
+            let escape = self.pendingInput.removeFirst()
+            self.handleCharacter(escape)
+            self.processPendingInput()
+        }
+        self.escapeFlushWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(30), execute: workItem)
     }
 
     private func handleCharacter(_ char: Character) {

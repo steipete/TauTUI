@@ -95,7 +95,10 @@ public final class Editor: Component {
     }
 
     public func setText(_ text: String) {
+        self.cancelAutocomplete()
         self.historyIndex = -1 // exit history browsing mode
+        self.pastes.removeAll(keepingCapacity: false)
+        self.pasteCounter = 0
         self.buffer.setText(text)
         self.onChange?(self.getText())
     }
@@ -118,6 +121,7 @@ public final class Editor: Component {
         guard newIndex >= -1, newIndex < self.history.count else { return }
 
         self.historyIndex = newIndex
+        self.cancelAutocomplete()
         let text = self.historyIndex == -1 ? "" : (self.history[self.historyIndex])
         self.buffer.setText(text)
         self.onChange?(self.getText())
@@ -244,28 +248,34 @@ public final class Editor: Component {
             } else {
                 self.moveCursorVisual(deltaLine: -1)
             }
+            self.updateAutocomplete()
         case .arrowDown:
             if self.historyIndex > -1, self.isOnLastVisualLine() {
                 self.navigateHistory(1)
             } else {
                 self.moveCursorVisual(deltaLine: 1)
             }
+            self.updateAutocomplete()
         case .arrowLeft:
             if modifiers.contains(.option) || modifiers.contains(.control) {
                 self.moveByWord(-1)
             } else {
                 self.moveCursorHorizontal(deltaCol: -1)
             }
+            self.updateAutocomplete()
         case .arrowRight:
             if modifiers.contains(.option) || modifiers.contains(.control) {
                 self.moveByWord(1)
             } else {
                 self.moveCursorHorizontal(deltaCol: 1)
             }
+            self.updateAutocomplete()
         case .home:
             self.buffer = self.withMutatingBuffer { buf in buf.moveToLineStart() }
+            self.updateAutocomplete()
         case .end:
             self.buffer = self.withMutatingBuffer { buf in buf.moveToLineEnd() }
+            self.updateAutocomplete()
         case let .character(char):
             if modifiers.contains(.control) {
                 switch char.lowercased() {
@@ -280,8 +290,10 @@ public final class Editor: Component {
                     self.deleteWordBackwards()
                 case "a":
                     self.buffer = self.withMutatingBuffer { buf in buf.moveToLineStart() }
+                    self.updateAutocomplete()
                 case "e":
                     self.buffer = self.withMutatingBuffer { buf in buf.moveToLineEnd() }
+                    self.updateAutocomplete()
                 default:
                     self.insertCharacter(String(char))
                 }
@@ -308,39 +320,28 @@ public final class Editor: Component {
 
     private func insertNewLine() {
         self.buffer = self.withMutatingBuffer { buf in buf.insertNewLine() }
-        self.onChange?(self.getText())
+        self.textDidChange()
     }
 
     private func backspace() {
         self.buffer = self.withMutatingBuffer { buf in buf.backspace() }
-        self.onChange?(self.getText())
+        self.textDidChange()
     }
 
     private func deleteForward() {
         self.buffer = self.withMutatingBuffer { buf in buf.deleteForward() }
-        self.onChange?(self.getText())
+        self.textDidChange()
     }
 
     private func deleteWordForward() {
         self.buffer = self.withMutatingBuffer { buf in
             buf.deleteWordForward(isBoundary: self.isBoundary)
         }
-        self.onChange?(self.getText())
-    }
-
-    private func moveCursor(lineDelta: Int, columnDelta: Int) {
-        self.buffer = self.withMutatingBuffer { buf in buf.moveCursor(lineDelta: lineDelta, columnDelta: columnDelta) }
+        self.textDidChange()
     }
 
     private func submit() {
-        var text = self.getText().trimmingCharacters(in: .whitespacesAndNewlines)
-        for (id, paste) in self.pastes {
-            let pattern = "\\[paste #\(id)(?: [^\\]]+)?\\]"
-            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
-                let range = NSRange(location: 0, length: text.utf16.count)
-                text = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: paste)
-            }
-        }
+        let text = self.expandPasteMarkers(in: self.getText()).trimmingCharacters(in: .whitespacesAndNewlines)
         self.buffer = EditorBuffer()
         self.pastes.removeAll()
         self.pasteCounter = 0
@@ -352,19 +353,19 @@ public final class Editor: Component {
 
     private func deleteToStartOfLine() {
         self.buffer = self.withMutatingBuffer { buf in buf.deleteToStartOfLine() }
-        self.onChange?(self.getText())
+        self.textDidChange()
     }
 
     private func deleteToEndOfLine() {
         self.buffer = self.withMutatingBuffer { buf in buf.deleteToEndOfLine() }
-        self.onChange?(self.getText())
+        self.textDidChange()
     }
 
     private func deleteWordBackwards() {
         self.buffer = self.withMutatingBuffer { buf in
             buf.deleteWordBackwards(isBoundary: self.isBoundary)
         }
-        self.onChange?(self.getText())
+        self.textDidChange()
     }
 
     private func moveByWord(_ direction: Int) {
@@ -386,19 +387,8 @@ public final class Editor: Component {
 
     private func handlePaste(_ text: String) {
         self.historyIndex = -1
-        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
-        let spacesExpanded = normalized.replacingOccurrences(of: "\t", with: "    ")
-        var sanitized = spacesExpanded.reduce(into: "") { partial, char in
-            if char == "\n" {
-                partial.append(char)
-                return
-            }
-            // Keep any printable Unicode character; drop control chars (< 0x20).
-            let hasControl = char.unicodeScalars.contains { $0.value < 32 }
-            if !hasControl {
-                partial.append(char)
-            }
-        }
+        self.cancelAutocomplete()
+        var sanitized = PasteSanitizer.sanitize(text, allowsNewlines: true)
 
         // If pasting a file path and the character before the cursor is a word character, prepend a space.
         if let first = sanitized.first,
@@ -423,15 +413,13 @@ public final class Editor: Component {
             } else {
                 "[paste #\(self.pasteCounter) \(sanitized.count) chars]"
             }
-            for char in marker {
-                self.insertCharacter(String(char))
-            }
+            self.buffer = self.withMutatingBuffer { buf in buf.insertCharacter(marker) }
+            self.textDidChange(refreshAutocomplete: false)
             return
         }
         if lines.count == 1 {
-            for char in sanitized {
-                self.insertCharacter(String(char))
-            }
+            self.buffer = self.withMutatingBuffer { buf in buf.insertCharacter(sanitized) }
+            self.textDidChange(refreshAutocomplete: false)
             return
         }
         let currentLine = self.buffer.lines[self.buffer.cursorLine]
@@ -452,7 +440,43 @@ public final class Editor: Component {
                 buf.cursorCol = String(last).count
             }
         }
+        self.textDidChange(refreshAutocomplete: false)
+    }
+
+    private func textDidChange(refreshAutocomplete: Bool = true) {
+        self.synchronizePasteRegistry()
         self.onChange?(self.getText())
+        if refreshAutocomplete {
+            self.updateAutocomplete()
+        }
+    }
+
+    private func synchronizePasteRegistry() {
+        guard !self.pastes.isEmpty else { return }
+        let text = self.getText()
+        self.pastes = self.pastes.filter { id, _ in
+            guard let regex = Self.pasteMarkerRegex(id: id) else { return false }
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            return regex.firstMatch(in: text, range: range) != nil
+        }
+    }
+
+    private func expandPasteMarkers(in text: String) -> String {
+        var result = text
+        for (id, paste) in self.pastes.sorted(by: { $0.key < $1.key }) {
+            guard let regex = Self.pasteMarkerRegex(id: id) else { continue }
+            let range = NSRange(result.startIndex..<result.endIndex, in: result)
+            for match in regex.matches(in: result, range: range).reversed() {
+                guard let markerRange = Range(match.range, in: result) else { continue }
+                result.replaceSubrange(markerRange, with: paste)
+            }
+        }
+        return result
+    }
+
+    private static func pasteMarkerRegex(id: Int) -> NSRegularExpression? {
+        let pattern = "\\[paste #\(id)(?: \\+\\d+ lines| \\d+ chars)?\\]"
+        return try? NSRegularExpression(pattern: pattern)
     }
 
     /// Helper to mutate the value-type buffer while keeping `Editor` reference semantics.

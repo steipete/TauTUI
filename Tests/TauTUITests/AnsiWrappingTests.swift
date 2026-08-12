@@ -22,6 +22,12 @@ struct AnsiWrappingTests {
     }
 
     @Test
+    func `normalizes carriage return line endings`() {
+        let wrapped = AnsiWrapping.wrapText("one\r\ntwo\rthree", width: 20)
+        #expect(wrapped == ["one", "two", "three"])
+    }
+
+    @Test
     func `apply background pads and keeps resets`() {
         let bg = AnsiStyling.Background.rgb(0, 255, 0)
         let line = "\u{001B}[1mhello\u{001B}[0m world"
@@ -29,6 +35,17 @@ struct AnsiWrappingTests {
         #expect(VisibleWidth.measure(result) == 20)
         // Background should be reapplied after reset
         #expect(result.contains(bg.start))
+        #expect(result.hasSuffix(bg.end))
+        #expect(!result.hasSuffix(bg.start))
+    }
+
+    @Test
+    func `background reapplies only after internal resets`() {
+        let background = AnsiStyling.Background.rgb(1, 2, 3)
+        let result = background.apply("one\u{001B}[0mtwo\u{001B}[49mthree")
+
+        #expect(result == background.start + "one\u{001B}[0m" + background.start + "two" + background.end +
+            background.start + "three" + background.end)
     }
 
     @Test

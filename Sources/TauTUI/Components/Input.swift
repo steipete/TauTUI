@@ -206,9 +206,7 @@ public final class Input: Component {
     }
 
     private func cleanedPaste(_ text: String) -> String {
-        text.replacingOccurrences(of: "\r\n", with: "")
-            .replacingOccurrences(of: "\n", with: "")
-            .replacingOccurrences(of: "\r", with: "")
+        PasteSanitizer.sanitize(text, allowsNewlines: false)
     }
 
     private func windowedValue(available: Int) -> (String, Int) {

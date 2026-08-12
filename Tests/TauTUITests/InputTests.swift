@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import TauTUI
 
@@ -33,6 +34,16 @@ struct InputTests {
 
         input.handle(input: .raw("\u{001B}[A"))
         #expect(input.value == "hello worldmorelines")
+    }
+
+    @Test
+    func `paste removes terminal control sequences and preserves unicode`() {
+        let input = Input()
+
+        input.handle(input: .paste("\u{001B}]0;owned\u{0007}\u{001B}[31mhello\u{007F}\u{0085}\t😀\nworld"))
+
+        #expect(input.value == "]0;owned[31mhello    😀world")
+        #expect(!input.value.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains))
     }
 
     @Test

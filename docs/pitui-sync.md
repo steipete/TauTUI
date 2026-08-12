@@ -1,6 +1,25 @@
+# pi-tui sync log (Aug 11, 2026)
+
+Context: the current upstream checkout lives at `../oss/pi-mono` (`/Users/steipete/Projects/oss/pi-mono`) relative to this repo. Current `origin/main` inspected: `534bcbffb` on **2026-08-11**; the latest released TUI entry is **0.84.1 (2026-08-07)**.
+
+## Changes synchronized in TauTUI 0.2.2
+
+- Editor paste insertion is atomic, avoiding hundreds of intermediate `onChange` and autocomplete calls for an ordinary paste.
+- Editor and Input now share one Unicode-preserving paste sanitizer, eliminating divergent handling of terminal controls, tabs, and line endings.
+- `setText` and marker edits discard stale hidden paste payloads; submit expansion inserts `$` and backslashes literally instead of treating them as regular-expression replacement syntax.
+- Open autocomplete results re-query after cursor movement and destructive edits so accepting a suggestion cannot apply a result for an old cursor position.
+- ProcessTerminal now treats descriptor input as a byte stream, retaining split UTF-8 scalars, CSI/Kitty sequences, and bracketed-paste delimiters between reads.
+- Background styles now reapply only after internal resets and always terminate with their configured reset sequence.
+- ANSI-aware wrapping normalizes CRLF and CR line endings before layout.
+
+## Audited upstream changes not yet ported
+
+- The alternate-screen renderer, layout stacks, mouse selection, transcript navigation/search, and native Windows/Darwin input helpers are separate from TauTUI's current main-screen renderer and Peekaboo's usage, so they were intentionally not pulled into this focused dependency refresh.
+- Unicode word segmentation, terminal capability negotiation, OSC 8 hyperlinks, terminal color-scheme queries, configurable loader indicators, Markdown source-marker preservation, and LaTeX rendering remain useful future parity work. They should land as separately tested API changes rather than widening this editor-state fix.
+
 # pi-tui sync log (Dec 27, 2025)
 
-Context: upstream `pi-mono` checkout lives at `../../pi-mono` (`/Users/steipete/Projects/pi-mono`) relative to this repo. Current head inspected: `origin/main` at `04fa79e` as of **2025-12-27**. `packages/tui/CHANGELOG.md` latest entry: **0.29.0 (2025-12-25)**.
+Context: upstream `pi-mono` checkout then lived at `../../pi-mono` (`/Users/steipete/Projects/pi-mono`) relative to this repo. Head inspected: `origin/main` at `04fa79e` as of **2025-12-27**. `packages/tui/CHANGELOG.md` latest entry: **0.29.0 (2025-12-25)**.
 
 ## Notable upstream changes (TUI)
 - Auto-space before pasted file paths (prefix `/`, `~`, `.`) when cursor is after a word char.

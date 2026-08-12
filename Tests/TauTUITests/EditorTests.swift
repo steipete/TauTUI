@@ -18,6 +18,7 @@ private func type(_ text: String, into editor: Editor) {
 
 private final class StubAutocompleteProvider: AutocompleteProvider {
     var suggestion: AutocompleteSuggestion?
+    var suggestionForInput: (([String], Int, Int) -> AutocompleteSuggestion?)?
     var triggerFileCompletion = true
 
     func getSuggestions(
@@ -25,7 +26,7 @@ private final class StubAutocompleteProvider: AutocompleteProvider {
         cursorLine: Int,
         cursorCol: Int) -> AutocompleteSuggestion?
     {
-        self.suggestion
+        self.suggestionForInput?(lines, cursorLine, cursorCol) ?? self.suggestion
     }
 
     func applyCompletion(
@@ -302,10 +303,12 @@ struct EditorTests {
     @Test
     func `paste filters control characters`() {
         let editor = Editor()
-        editor.handle(input: .paste("\tcolumn\u{0007}\nline"))
+        editor.handle(input: .paste("\tcolumn\u{0007}\u{007F}\u{0085}\nline"))
         let text = editor.getText()
         #expect(text.contains("    column"))
         #expect(!text.contains("\u{0007}"))
+        #expect(!text.contains("\u{007F}"))
+        #expect(!text.contains("\u{0085}"))
     }
 
     @Test
@@ -323,6 +326,26 @@ struct EditorTests {
 
         editor.handle(input: .key(.escape))
         let hidden = editor.render(width: 20)
+        #expect(showing.count > hidden.count)
+    }
+
+    @Test
+    func `cursor movement refreshes autocomplete`() {
+        let provider = StubAutocompleteProvider()
+        provider.suggestionForInput = { _, _, cursorCol in
+            guard cursorCol == 2 else { return nil }
+            return AutocompleteSuggestion(
+                items: [AutocompleteItem(value: "alpha", label: "alpha", description: nil)],
+                prefix: "/a")
+        }
+        let editor = Editor()
+        editor.setAutocompleteProvider(provider)
+
+        type("/a", into: editor)
+        let showing = editor.render(width: 20)
+        editor.handle(input: .key(.arrowLeft))
+        let hidden = editor.render(width: 20)
+
         #expect(showing.count > hidden.count)
     }
 

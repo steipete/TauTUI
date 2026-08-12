@@ -232,6 +232,94 @@ struct TUIRenderingTests {
     }
 
     @Test
+    func `CSI parsing survives every byte split`() {
+        let payload = Array("\u{001B}[1;3D".utf8)
+
+        for split in 0...payload.count {
+            let parser = ProcessTerminal()
+            let events = parser.parseBytesForTests([
+                Array(payload[..<split]),
+                Array(payload[split...]),
+            ])
+
+            #expect(events.count == 1, "split at byte \(split)")
+            guard events.count == 1,
+                  case let .key(.arrowLeft, modifiers) = events[0]
+            else {
+                Issue.record("expected Option-Left when split at byte \(split)")
+                continue
+            }
+            #expect(modifiers == [.option], "split at byte \(split)")
+        }
+    }
+
+    @Test
+    func `Kitty parsing survives every byte split`() {
+        let payload = Array("\u{001B}[119;5u".utf8)
+
+        for split in 0...payload.count {
+            let parser = ProcessTerminal()
+            let events = parser.parseBytesForTests([
+                Array(payload[..<split]),
+                Array(payload[split...]),
+            ])
+
+            #expect(events.count == 1, "split at byte \(split)")
+            guard events.count == 1,
+                  case let .key(.character("w"), modifiers) = events[0]
+            else {
+                Issue.record("expected Control-W when split at byte \(split)")
+                continue
+            }
+            #expect(modifiers == [.control], "split at byte \(split)")
+        }
+    }
+
+    @Test
+    func `bracketed paste delimiters survive every byte split`() {
+        let pasted = "hello 😀"
+        let payload = Array("\u{001B}[200~\(pasted)\u{001B}[201~".utf8)
+
+        for split in 0...payload.count {
+            let parser = ProcessTerminal()
+            let events = parser.parseBytesForTests([
+                Array(payload[..<split]),
+                Array(payload[split...]),
+            ])
+
+            #expect(events.count == 1, "split at byte \(split)")
+            guard events.count == 1, case let .paste(value) = events[0] else {
+                Issue.record("expected one paste event when split at byte \(split)")
+                continue
+            }
+            #expect(value == pasted, "split at byte \(split)")
+        }
+    }
+
+    @Test
+    func `UTF8 input survives every byte split`() {
+        let text = "Aé😀B"
+        let payload = Array(text.utf8)
+
+        for split in 0...payload.count {
+            let parser = ProcessTerminal()
+            let events = parser.parseBytesForTests([
+                Array(payload[..<split]),
+                Array(payload[split...]),
+            ])
+            let characters = events.compactMap { event -> Character? in
+                guard case let .key(.character(character), modifiers) = event,
+                      modifiers.isEmpty
+                else { return nil }
+                return character
+            }
+
+            #expect(events.count == text.count, "split at byte \(split)")
+            #expect(String(characters) == text, "split at byte \(split)")
+        }
+    }
+
+    @Test
     func `key event normalization line feed treats as enter`() {
         let parser = ProcessTerminal()
         let events = parser.parseForTests("\n")
