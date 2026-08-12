@@ -55,6 +55,22 @@ struct TUIRenderingTests {
     }
 
     @MainActor @Test
+    func `height resize forces full render and clear`() throws {
+        let terminal = VirtualTerminal(columns: 20, rows: 5)
+        let tui = TUI(terminal: terminal, renderScheduler: { $0() })
+        let component = DummyComponent(lines: ["hello", "world"])
+        tui.addChild(component)
+        try tui.start()
+
+        terminal.resize(columns: 20, rows: 8)
+
+        let last = terminal.outputLog.last ?? ""
+        #expect(last.contains("\u{001B}[?2026h"))
+        #expect(last.contains("\u{001B}[3J\u{001B}[2J\u{001B}[H"))
+        #expect(last.contains("hello\r\nworld"))
+    }
+
+    @MainActor @Test
     func `partial diff writes only changed lines`() throws {
         let terminal = VirtualTerminal(columns: 20, rows: 5)
         let tui = TUI(terminal: terminal, renderScheduler: { $0() })
