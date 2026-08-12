@@ -74,4 +74,44 @@ struct TerminalImageTests {
         #expect(jpegDims?.widthPx == 32)
         #expect(jpegDims?.heightPx == 16)
     }
+
+    @Test
+    func `max height reduces image width while preserving aspect ratio`() {
+        let size = TerminalImage.calculateImageCellSize(
+            imageDimensions: .init(widthPx: 10, heightPx: 100),
+            maxWidthCells: 10,
+            maxHeightCells: 5,
+            cellDimensions: .init(widthPx: 10, heightPx: 10))
+
+        #expect(size.columns == 1)
+        #expect(size.rows == 5)
+    }
+
+    @Test
+    func `image component honors explicit max height`() {
+        TerminalImage.setCapabilitiesForTests(.init(images: .kitty, trueColor: true, hyperlinks: true))
+        TerminalImage.setCellDimensions(.init(widthPx: 10, heightPx: 10))
+        defer {
+            TerminalImage.resetCapabilitiesCache()
+            TerminalImage.setCellDimensions(.init(widthPx: 9, heightPx: 18))
+        }
+
+        let image = Image(
+            base64Data: "AAAA",
+            mimeType: "image/png",
+            options: .init(maxWidthCells: 10, maxHeightCells: 3),
+            dimensions: .init(widthPx: 10, heightPx: 100))
+        let lines = image.render(width: 12)
+
+        #expect(lines.count == 3)
+        #expect(lines.joined().contains("c=1,r=3"))
+
+        TerminalImage.setCapabilitiesForTests(.init(images: .iterm2, trueColor: true, hyperlinks: true))
+        let iterm = TerminalImage.renderImage(
+            base64Data: "AAAA",
+            imageDimensions: .init(widthPx: 10, heightPx: 100),
+            options: .init(maxWidthCells: 10, maxHeightCells: 3))
+        #expect(iterm?.rows == 3)
+        #expect(iterm?.sequence.contains("width=1;height=auto") == true)
+    }
 }

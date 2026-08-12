@@ -173,11 +173,6 @@ public final class CombinedAutocompleteProvider: AutocompleteProvider {
         return item.value
     }
 
-    private func completionCursorOffset(for prefix: String, item: AutocompleteItem) -> Int {
-        let replacement = self.completionString(for: prefix, item: item)
-        return replacement.count
-    }
-
     private func slashCommandSuggestions(textBeforeCursor: String) -> AutocompleteSuggestion? {
         if let spaceIndex = textBeforeCursor.firstIndex(of: " ") {
             let commandName =

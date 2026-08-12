@@ -3,6 +3,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [0.2.2] - Unreleased
+- Markdown code blocks now wrap styled content and fences to the render width instead of violating TUI viewport invariants while streaming.
+- Image rendering now honors `maxHeightCells`, reducing width proportionally to preserve aspect ratio, and applies a bounded default height.
 - Editor pastes are now inserted atomically without per-character autocomplete work, stale hidden paste payloads are discarded when markers or editor text change, and payloads containing `$` or backslashes expand literally on submit.
 - Editor and Input now share one Unicode-preserving paste sanitizer that strips terminal control characters and normalizes tabs and line endings.
 - Open autocomplete suggestions now refresh after cursor movement and text deletion instead of applying results computed for a stale cursor position.

@@ -306,11 +306,15 @@ private final class Renderer {
     }
 
     private func renderCodeBlock(_ code: CodeBlock) {
-        self.lines.append(self.theme.codeBlockBorder("```\(code.language ?? "")"))
+        self.wrap(line: self.theme.codeBlockBorder("```\(code.language ?? "")"))
+        let indentWidth = min(2, max(0, self.maxWidth - 1))
+        let indent = String(repeating: " ", count: indentWidth)
+        let contentWidth = max(1, self.maxWidth - indentWidth)
         for line in code.code.split(separator: "\n", omittingEmptySubsequences: false) {
-            self.lines.append("  " + self.theme.codeBlock(String(line)))
+            let styled = self.theme.codeBlock(String(line))
+            self.lines.append(contentsOf: AnsiWrapping.wrapText(styled, width: contentWidth).map { indent + $0 })
         }
-        self.lines.append(self.theme.codeBlockBorder("```"))
+        self.wrap(line: self.theme.codeBlockBorder("```"))
         self.lines.append("")
     }
 

@@ -4,6 +4,8 @@ Context: the current upstream checkout lives at `../oss/pi-mono` (`/Users/steipe
 
 ## Changes synchronized in TauTUI 0.2.2
 
+- Markdown code blocks now stay within the render width, including incomplete fences updated while content streams.
+- Image sizing now applies both width and height bounds while preserving aspect ratio, including the upstream square-pixel default height.
 - Editor paste insertion is atomic, avoiding hundreds of intermediate `onChange` and autocomplete calls for an ordinary paste.
 - Editor and Input now share one Unicode-preserving paste sanitizer, eliminating divergent handling of terminal controls, tabs, and line endings.
 - `setText` and marker edits discard stale hidden paste payloads; submit expansion inserts `$` and backslashes literally instead of treating them as regular-expression replacement syntax.
