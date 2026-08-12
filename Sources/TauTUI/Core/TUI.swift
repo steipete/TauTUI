@@ -146,18 +146,18 @@ public final class TUI: Container {
             return
         }
 
-        guard let diffRange = computeDiffRange(old: previousLines, new: newLines) else {
+        guard let firstChangedLine = self.firstChangedLine(old: self.previousLines, new: newLines) else {
             return // no changes
         }
 
         let viewportTop = self.cursorRow - height + 1
-        if diffRange.lowerBound < viewportTop {
+        if firstChangedLine < viewportTop {
             self.writeFullRender(newLines, clear: true)
             self.recordRenderState(lines: newLines, width: width, height: height)
             return
         }
 
-        self.writePartialRender(lines: newLines, from: diffRange.lowerBound)
+        self.writePartialRender(lines: newLines, from: firstChangedLine)
         self.recordRenderState(lines: newLines, width: width, height: height)
     }
 
@@ -168,24 +168,11 @@ public final class TUI: Container {
         self.cursorRow = max(0, lines.count - 1)
     }
 
-    private func computeDiffRange(old: [String], new: [String]) -> Range<Int>? {
-        let maxCount = max(old.count, new.count)
-        var firstChanged: Int?
-        var lastChanged: Int?
-
-        for index in 0..<maxCount {
-            let oldLine = index < old.count ? old[index] : ""
-            let newLine = index < new.count ? new[index] : ""
-            if oldLine != newLine {
-                if firstChanged == nil { firstChanged = index }
-                lastChanged = index
-            }
+    private func firstChangedLine(old: [String], new: [String]) -> Int? {
+        for index in 0..<min(old.count, new.count) where old[index] != new[index] {
+            return index
         }
-
-        guard let start = firstChanged, let end = lastChanged else {
-            return nil
-        }
-        return start..<(end + 1)
+        return old.count == new.count ? nil : min(old.count, new.count)
     }
 
     private func writeFullRender(_ lines: [String], clear: Bool = false) {
@@ -221,7 +208,10 @@ public final class TUI: Container {
 
         if self.previousLines.count > lines.count {
             let extraLines = self.previousLines.count - lines.count
-            for _ in 0..<extraLines {
+            if start == lines.count {
+                buffer += ANSI.clearLine
+            }
+            for _ in (start == lines.count ? 1 : 0)..<extraLines {
                 buffer += "\r\n" + ANSI.clearLine
             }
             buffer += ANSI.cursorUp(extraLines)
