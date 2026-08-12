@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - Editor pastes are now inserted atomically without per-character autocomplete work, stale hidden paste payloads are discarded when markers or editor text change, and payloads containing `$` or backslashes expand literally on submit.
 - Editor and Input now share one Unicode-preserving paste sanitizer that strips terminal control characters and normalizes tabs and line endings.
 - Open autocomplete suggestions now refresh after cursor movement and text deletion instead of applying results computed for a stale cursor position.
-- ProcessTerminal now preserves split UTF-8 scalars, CSI/Kitty key sequences, and bracketed-paste delimiters across arbitrary descriptor read boundaries.
+- ProcessTerminal now preserves split UTF-8 scalars, CSI/Kitty key sequences, and bracketed-paste delimiters across arbitrary descriptor read boundaries without letting malformed UTF-8 prefixes stall subsequent input.
 - Background styles now always finish with a reset instead of leaking their color into later terminal output.
 - ANSI-aware wrapping now treats CRLF and CR as line endings, preserving line boundaries from cross-platform terminal output.
 - ChatDemo no longer retains its view model through the editor submit callback and builds without Swift 6.4 capture warnings.

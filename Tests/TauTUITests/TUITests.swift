@@ -320,6 +320,58 @@ struct TUIRenderingTests {
     }
 
     @Test
+    func `malformed UTF8 lead does not suppress following ASCII`() {
+        let parser = ProcessTerminal()
+        let events = parser.parseBytesForTests([[0xE2, 0x41]])
+        let characters = events.compactMap { event -> Character? in
+            guard case let .key(.character(character), modifiers) = event,
+                  modifiers.isEmpty
+            else { return nil }
+            return character
+        }
+
+        #expect(String(characters) == "\u{FFFD}A")
+    }
+
+    @Test
+    func `malformed UTF8 prefix releases ASCII across read boundaries`() {
+        let chunks: [[[UInt8]]] = [
+            [[0xE2], [0x41]],
+            [[0xF0], [0x41]],
+            [[0xF0, 0x9F], [0x41]],
+        ]
+
+        for chunks in chunks {
+            let parser = ProcessTerminal()
+            let events = parser.parseBytesForTests(chunks)
+            let characters = events.compactMap { event -> Character? in
+                guard case let .key(.character(character), modifiers) = event,
+                      modifiers.isEmpty
+                else { return nil }
+                return character
+            }
+
+            #expect(String(characters) == "\u{FFFD}A", "chunks: \(chunks)")
+        }
+    }
+
+    @Test
+    func `valid partial UTF8 scalar remains buffered at a read boundary`() {
+        let parser = ProcessTerminal()
+
+        #expect(parser.parseBytesForTests([[0xE2, 0x82]]).isEmpty)
+
+        let events = parser.parseBytesForTests([[0xAC, 0x41]])
+        let characters = events.compactMap { event -> Character? in
+            guard case let .key(.character(character), modifiers) = event,
+                  modifiers.isEmpty
+            else { return nil }
+            return character
+        }
+        #expect(String(characters) == "€A")
+    }
+
+    @Test
     func `key event normalization line feed treats as enter`() {
         let parser = ProcessTerminal()
         let events = parser.parseForTests("\n")

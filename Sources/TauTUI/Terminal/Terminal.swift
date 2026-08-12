@@ -307,19 +307,21 @@ public final class ProcessTerminal: Terminal {
                 continue
             }
 
-            guard index + sequenceLength <= self.pendingUTF8Bytes.count else {
-                return index
+            let continuationStart = index + 1
+            let sequenceEnd = index + sequenceLength
+            let availableEnd = min(sequenceEnd, self.pendingUTF8Bytes.count)
+            let hasValidContinuations = continuationStart == availableEnd ||
+                self.pendingUTF8Bytes[continuationStart..<availableEnd]
+                .allSatisfy { $0 & 0xC0 == 0x80 }
+            if !hasValidContinuations {
+                index += 1
+                continue
             }
 
-            let continuationStart = index + 1
-            let hasValidContinuations = continuationStart == index + sequenceLength ||
-                self.pendingUTF8Bytes[continuationStart..<(index + sequenceLength)]
-                .allSatisfy { $0 & 0xC0 == 0x80 }
-            if hasValidContinuations {
-                index += sequenceLength
-            } else {
-                index += 1
+            guard sequenceEnd <= self.pendingUTF8Bytes.count else {
+                return index
             }
+            index = sequenceEnd
         }
         return index
     }
