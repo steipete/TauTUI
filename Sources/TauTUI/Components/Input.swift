@@ -147,55 +147,12 @@ public final class Input: Component {
 
     private func moveWordBackwards() {
         guard self.cursor > 0 else { return }
-        let chars = Array(self.value)
-        var idx = self.cursor
-
-        while idx > 0, chars[idx - 1].isWhitespace {
-            idx -= 1
-        }
-
-        if idx > 0 {
-            if self.isPunctuation(chars[idx - 1]) {
-                while idx > 0, self.isPunctuation(chars[idx - 1]) {
-                    idx -= 1
-                }
-            } else {
-                while idx > 0, !chars[idx - 1].isWhitespace, !self.isPunctuation(chars[idx - 1]) {
-                    idx -= 1
-                }
-            }
-        }
-
-        self.cursor = idx
+        self.cursor = WordNavigation.destination(in: self.value, from: self.cursor, direction: .backward)
     }
 
     private func moveWordForwards() {
-        let chars = Array(self.value)
-        guard self.cursor < chars.count else { return }
-        var idx = self.cursor
-
-        while idx < chars.count, chars[idx].isWhitespace {
-            idx += 1
-        }
-
-        if idx < chars.count {
-            if self.isPunctuation(chars[idx]) {
-                while idx < chars.count, self.isPunctuation(chars[idx]) {
-                    idx += 1
-                }
-            } else {
-                while idx < chars.count, !chars[idx].isWhitespace, !self.isPunctuation(chars[idx]) {
-                    idx += 1
-                }
-            }
-        }
-
-        self.cursor = idx
-    }
-
-    private func isPunctuation(_ ch: Character) -> Bool {
-        let punctuation: Set<Character> = Set("(){}[]<>.,;:'\"!?+-=*/\\|&%^$#@~`")
-        return punctuation.contains(ch)
+        guard self.cursor < self.value.count else { return }
+        self.cursor = WordNavigation.destination(in: self.value, from: self.cursor, direction: .forward)
     }
 
     private func insert(_ string: String) {

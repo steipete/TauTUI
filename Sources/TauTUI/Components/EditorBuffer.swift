@@ -160,9 +160,8 @@ public struct EditorBuffer: Sendable {
         }
 
         let currentLine = self.lines[self.cursorLine]
-        let chars = Array(currentLine)
 
-        if direction > 0, self.cursorCol >= chars.count {
+        if direction > 0, self.cursorCol >= currentLine.count {
             if self.cursorLine < self.lines.count - 1 {
                 self.cursorLine += 1
                 self.cursorCol = 0
@@ -170,47 +169,11 @@ public struct EditorBuffer: Sendable {
             return
         }
 
-        var idx = self.cursorCol
-        if direction > 0 {
-            while idx < chars.count, chars[idx].isWhitespace {
-                idx += 1
-            }
-
-            if idx < chars.count {
-                let isPunctuation = isBoundary(chars[idx]) && !chars[idx].isWhitespace
-                if isPunctuation {
-                    while idx < chars.count, isBoundary(chars[idx]), !chars[idx].isWhitespace {
-                        idx += 1
-                    }
-                } else {
-                    while idx < chars.count, !chars[idx].isWhitespace,
-                          !(isBoundary(chars[idx]) && !chars[idx].isWhitespace)
-                    {
-                        idx += 1
-                    }
-                }
-            }
-        } else {
-            while idx > 0, chars[idx - 1].isWhitespace {
-                idx -= 1
-            }
-
-            if idx > 0 {
-                let isPunctuation = isBoundary(chars[idx - 1]) && !chars[idx - 1].isWhitespace
-                if isPunctuation {
-                    while idx > 0, isBoundary(chars[idx - 1]), !chars[idx - 1].isWhitespace {
-                        idx -= 1
-                    }
-                } else {
-                    while idx > 0, !chars[idx - 1].isWhitespace,
-                          !(isBoundary(chars[idx - 1]) && !chars[idx - 1].isWhitespace)
-                    {
-                        idx -= 1
-                    }
-                }
-            }
-        }
-
-        self.cursorCol = max(0, min(chars.count, idx))
+        let navigationDirection: WordNavigationDirection = direction > 0 ? .forward : .backward
+        self.cursorCol = WordNavigation.destination(
+            in: currentLine,
+            from: self.cursorCol,
+            direction: navigationDirection,
+            isBoundary: isBoundary)
     }
 }
