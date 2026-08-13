@@ -372,17 +372,12 @@ public final class Editor: Component {
         self.buffer = self.withMutatingBuffer { buf in buf.moveByWord(direction, isBoundary: self.isBoundary) }
     }
 
-    private func isPunctuation(_ ch: Character) -> Bool {
-        let punctuation: Set<Character> = Set("(){}[]<>.,;:'\"!?+-=*/\\|&%^$#@~`")
-        return punctuation.contains(ch)
-    }
-
     private func isWordCharacter(_ ch: Character) -> Bool {
-        ch.isLetter || ch.isNumber || ch == "_"
+        WordNavigation.isWordCharacter(ch)
     }
 
     private func isBoundary(_ ch: Character) -> Bool {
-        ch.isWhitespace || self.isPunctuation(ch)
+        WordNavigation.isBoundary(ch)
     }
 
     private func handlePaste(_ text: String) {
