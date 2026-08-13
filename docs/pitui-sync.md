@@ -1,6 +1,6 @@
-# pi-tui sync log (Aug 11, 2026)
+# pi-tui sync log (Aug 12, 2026)
 
-Context: the current upstream checkout lives at `../oss/pi-mono` (`/Users/steipete/Projects/oss/pi-mono`) relative to this repo. Current `origin/main` inspected: `534bcbffb` on **2026-08-11**; the latest released TUI entry is **0.84.1 (2026-08-07)**.
+Context: the current upstream checkout lives at `../../oss/pi-mono` (`/Users/steipete/Projects/oss/pi-mono`) relative to this repo. Current `origin/main` inspected: `581d75a89` on **2026-08-12**; the latest released TUI entry is **0.84.1 (2026-08-07)**.
 
 ## Changes synchronized in TauTUI 0.2.2
 
@@ -17,7 +17,7 @@ Context: the current upstream checkout lives at `../oss/pi-mono` (`/Users/steipe
 
 ## Audited upstream changes not yet ported
 
-- The alternate-screen renderer, layout stacks, mouse selection, transcript navigation/search, and native Windows/Darwin input helpers are separate from TauTUI's current main-screen renderer and Peekaboo's usage, so they were intentionally not pulled into this focused dependency refresh.
+- The alternate-screen renderer, layout stacks, mouse selection, focused-overlay wheel/viewport routing, transcript navigation/search, and native Windows/Darwin input helpers are separate from TauTUI's current main-screen renderer and Peekaboo's usage, so they were intentionally not pulled into this focused dependency refresh.
 - Unicode word segmentation, terminal capability negotiation, OSC 8 hyperlinks, terminal color-scheme queries, configurable loader indicators, Markdown source-marker preservation, and LaTeX rendering remain useful future parity work. They should land as separately tested API changes rather than widening this editor-state fix.
 
 # pi-tui sync log (Dec 27, 2025)
