@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - TUI sessions no longer render after shutdown, reuse stale render state after restart, or leave old rows visible when content becomes empty.
 - Partial TUI updates now clear removed trailing rows, including empty spacer rows, without leaving stale terminal content behind.
 - Height-only terminal resizes now trigger a full redraw so the main-screen viewport stays aligned.
+- Full and partial terminal redraws now enforce the same visible-width invariant before writing component output.
 
 ## [0.2.1] - 2026-07-15
 - TruncatedText no longer emits a full three-dot ellipsis when the available width is 1 or 2, which had made the rendered line wider than the requested width; it now fills with as many dots as fit, matching the public `truncate` helper. Thanks @devYRPauli.

@@ -9,6 +9,12 @@ import Darwin
 /// Main runtime responsible for differential rendering and input routing.
 @MainActor
 public final class TUI: Container {
+    struct RenderWidthViolation: Equatable, Sendable {
+        let lineIndex: Int
+        let visibleWidth: Int
+        let maximumWidth: Int
+    }
+
     private let terminal: Terminal
     private let scheduleRender: (@MainActor @Sendable @escaping () -> Void) -> Void
     private var focusedComponent: Component?
@@ -128,20 +134,20 @@ public final class TUI: Container {
 
         guard !newLines.isEmpty else {
             if !self.previousLines.isEmpty {
-                self.writePartialRender(lines: [""], from: 0)
+                self.writePartialRender(lines: [""], from: 0, width: width)
             }
             self.recordRenderState(lines: [], width: width, height: height)
             return
         }
 
         if self.previousLines.isEmpty {
-            self.writeFullRender(newLines)
+            self.writeFullRender(newLines, width: width)
             self.recordRenderState(lines: newLines, width: width, height: height)
             return
         }
 
         if self.previousWidth != width || self.previousHeight != height {
-            self.writeFullRender(newLines, clear: true)
+            self.writeFullRender(newLines, width: width, clear: true)
             self.recordRenderState(lines: newLines, width: width, height: height)
             return
         }
@@ -152,12 +158,12 @@ public final class TUI: Container {
 
         let viewportTop = self.cursorRow - height + 1
         if firstChangedLine < viewportTop {
-            self.writeFullRender(newLines, clear: true)
+            self.writeFullRender(newLines, width: width, clear: true)
             self.recordRenderState(lines: newLines, width: width, height: height)
             return
         }
 
-        self.writePartialRender(lines: newLines, from: firstChangedLine)
+        self.writePartialRender(lines: newLines, from: firstChangedLine, width: width)
         self.recordRenderState(lines: newLines, width: width, height: height)
     }
 
@@ -175,7 +181,8 @@ public final class TUI: Container {
         return old.count == new.count ? nil : min(old.count, new.count)
     }
 
-    private func writeFullRender(_ lines: [String], clear: Bool = false) {
+    private func writeFullRender(_ lines: [String], width: Int, clear: Bool = false) {
+        self.validateRenderedLines(lines, width: width)
         var buffer = ANSI.syncStart
         if clear {
             buffer += ANSI.clearScrollbackAndScreen
@@ -185,7 +192,8 @@ public final class TUI: Container {
         self.terminal.write(buffer)
     }
 
-    private func writePartialRender(lines: [String], from start: Int) {
+    private func writePartialRender(lines: [String], from start: Int, width: Int) {
+        self.validateRenderedLines(lines, width: width, from: start)
         var buffer = ANSI.syncStart
         let lineDiff = start - self.cursorRow
         if lineDiff > 0 {
@@ -199,9 +207,6 @@ public final class TUI: Container {
         for index in start..<lines.count {
             if index > start { buffer += "\r\n" }
             let line = lines[index]
-            if !self.containsImage(line) {
-                precondition(VisibleWidth.measure(line) <= self.terminal.columns, "Rendered line exceeds width")
-            }
             buffer += ANSI.clearLine
             buffer += line
         }
@@ -221,7 +226,32 @@ public final class TUI: Container {
         self.terminal.write(buffer)
     }
 
-    private func containsImage(_ line: String) -> Bool {
+    nonisolated static func firstRenderWidthViolation(
+        in lines: [String],
+        width: Int,
+        from start: Int = 0) -> RenderWidthViolation?
+    {
+        let lowerBound = min(max(start, 0), lines.count)
+        for index in lowerBound..<lines.count where !Self.containsImage(lines[index]) {
+            let lineWidth = VisibleWidth.measure(lines[index])
+            if lineWidth > width {
+                return RenderWidthViolation(
+                    lineIndex: index,
+                    visibleWidth: lineWidth,
+                    maximumWidth: width)
+            }
+        }
+        return nil
+    }
+
+    private func validateRenderedLines(_ lines: [String], width: Int, from start: Int = 0) {
+        guard let violation = Self.firstRenderWidthViolation(in: lines, width: width, from: start) else { return }
+        preconditionFailure(
+            "Rendered line \(violation.lineIndex) exceeds terminal width " +
+                "(\(violation.visibleWidth) > \(violation.maximumWidth))")
+    }
+
+    private nonisolated static func containsImage(_ line: String) -> Bool {
         line.contains("\u{001B}_G") || line.contains("\u{001B}]1337;File=")
     }
 

@@ -87,6 +87,23 @@ struct TUIRenderingTests {
         #expect(last.contains("\u{001B}[?2026h"))
     }
 
+    @Test
+    func `full and partial render ranges report the same width violation`() {
+        let lines = ["fits", "\u{001B}[31m123456\u{001B}[0m"]
+        let expected = TUI.RenderWidthViolation(lineIndex: 1, visibleWidth: 6, maximumWidth: 5)
+
+        #expect(TUI.firstRenderWidthViolation(in: lines, width: 5) == expected)
+        #expect(TUI.firstRenderWidthViolation(in: lines, width: 5, from: 1) == expected)
+    }
+
+    @Test
+    func `render width validation exempts embedded image payloads`() {
+        let kitty = "prefix\u{001B}_Ga=t,f=100;AAAA\u{001B}\\suffix"
+        let iTerm = "prefix\u{001B}]1337;File=inline=1:AAAA\u{0007}suffix"
+
+        #expect(TUI.firstRenderWidthViolation(in: [kitty, iTerm], width: 1) == nil)
+    }
+
     @MainActor @Test
     func `partial diff clears extra old lines`() throws {
         let terminal = VirtualTerminal(columns: 20, rows: 5)
