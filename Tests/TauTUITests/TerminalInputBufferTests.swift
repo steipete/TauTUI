@@ -29,11 +29,31 @@ private final class ManualEscapeFlushScheduler {
 @Suite("Terminal input buffering")
 struct TerminalInputBufferTests {
     @Test
-    func `lone escape timeout is prompt locally and tolerant over SSH`() {
-        #expect(ProcessTerminal.resolveLoneEscapeTimeoutMilliseconds(environment: [:]) == 10)
-        #expect(ProcessTerminal.resolveLoneEscapeTimeoutMilliseconds(environment: ["SSH_TTY": "/dev/pts/1"]) == 100)
-        #expect(ProcessTerminal.resolveLoneEscapeTimeoutMilliseconds(environment: ["SSH_CONNECTION": "host"]) == 100)
-        #expect(ProcessTerminal.resolveLoneEscapeTimeoutMilliseconds(environment: ["SSH_TTY": ""]) == 10)
+    func `escape ambiguity timeout preserves local and SSH compatibility`() {
+        #expect(ProcessTerminal.resolveEscapeAmbiguityTimeoutMilliseconds(environment: [:]) == 30)
+        #expect(ProcessTerminal
+            .resolveEscapeAmbiguityTimeoutMilliseconds(environment: ["SSH_TTY": "/dev/pts/1"]) == 100)
+        #expect(ProcessTerminal
+            .resolveEscapeAmbiguityTimeoutMilliseconds(environment: ["SSH_CONNECTION": "host"]) == 100)
+        #expect(ProcessTerminal.resolveEscapeAmbiguityTimeoutMilliseconds(environment: ["SSH_TTY": ""]) == 30)
+    }
+
+    @Test
+    func `local split option enter remains one modified key through prior ambiguity window`() {
+        let scheduler = ManualEscapeFlushScheduler()
+        let parser = self.makeParser(environment: [:], scheduler: scheduler)
+
+        #expect(parser.parseForTests("\u{001B}").isEmpty)
+        #expect(scheduler.delays == [30])
+        scheduler.advance(milliseconds: 20)
+
+        let events = parser.parseForTests("\r")
+        #expect(events.count == 1)
+        guard events.count == 1, case let .key(.enter, modifiers) = events[0] else {
+            Issue.record("expected one local Option-Enter event")
+            return
+        }
+        #expect(modifiers == [.option])
     }
 
     @Test

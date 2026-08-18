@@ -11,7 +11,7 @@ Context: the current upstream checkout lives at `../../oss/pi-mono` (`/Users/ste
 - `setText` and marker edits discard stale hidden paste payloads; submit expansion inserts `$` and backslashes literally instead of treating them as regular-expression replacement syntax.
 - Open autocomplete results re-query after cursor movement and destructive edits so accepting a suggestion cannot apply a result for an old cursor position.
 - ProcessTerminal now treats descriptor input as a byte stream, retaining split UTF-8 scalars, CSI/Kitty sequences, and bracketed-paste delimiters between reads.
-- Lone Escape presses now use a prompt local timeout while SSH-split Option chords and incomplete escape sequences retain independent, longer reassembly windows.
+- Escape/Option ambiguity retains its 30 ms local window, while SSH-split Option chords and incomplete escape sequences use independent 100 ms and 50 ms reassembly windows.
 - The main-screen renderer now redraws on height-only terminal resizes so its viewport model stays aligned.
 - Background styles now reapply only after internal resets and always terminate with their configured reset sequence.
 - ANSI-aware wrapping normalizes CRLF and CR line endings before layout.

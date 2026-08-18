@@ -93,7 +93,7 @@ public final class ProcessTerminal: Terminal {
     private var escapeFlushWorkItem: DispatchWorkItem?
     private var escapeFlushGeneration: UInt = 0
 
-    private let loneEscapeTimeoutMilliseconds: Int
+    private let escapeAmbiguityTimeoutMilliseconds: Int
     private let escapeFlushScheduler: (Int, DispatchWorkItem) -> Void
 
     /// Emit `.raw` events for debugging/inspection (e.g. KeyTester).
@@ -113,8 +113,8 @@ public final class ProcessTerminal: Terminal {
     private static let optionEnterCSI = "\u{001B}[13;3~"
     private static let optionEnterMeta = "\u{001B}\r"
 
-    private static let defaultLoneEscapeTimeoutMilliseconds = 10
-    private static let sshLoneEscapeTimeoutMilliseconds = 100
+    private static let localEscapeAmbiguityTimeoutMilliseconds = 30
+    private static let sshEscapeAmbiguityTimeoutMilliseconds = 100
     private static let incompleteEscapeSequenceTimeoutMilliseconds = 50
 
     public convenience init() {
@@ -135,13 +135,16 @@ public final class ProcessTerminal: Terminal {
     {
         self.inputFD = FileDescriptor(rawValue: inputFileDescriptor)
         self.outputFD = FileDescriptor(rawValue: outputFileDescriptor)
-        self.loneEscapeTimeoutMilliseconds = Self.resolveLoneEscapeTimeoutMilliseconds(environment: environment)
+        self.escapeAmbiguityTimeoutMilliseconds = Self.resolveEscapeAmbiguityTimeoutMilliseconds(
+            environment: environment)
         self.escapeFlushScheduler = escapeFlushScheduler
     }
 
-    static func resolveLoneEscapeTimeoutMilliseconds(environment: [String: String]) -> Int {
+    static func resolveEscapeAmbiguityTimeoutMilliseconds(environment: [String: String]) -> Int {
         let isSSH = environment["SSH_CONNECTION"]?.isEmpty == false || environment["SSH_TTY"]?.isEmpty == false
-        return isSSH ? Self.sshLoneEscapeTimeoutMilliseconds : Self.defaultLoneEscapeTimeoutMilliseconds
+        return isSSH
+            ? Self.sshEscapeAmbiguityTimeoutMilliseconds
+            : Self.localEscapeAmbiguityTimeoutMilliseconds
     }
 
     /// Testing helper: parse a raw input string into `TerminalInput` events
@@ -449,7 +452,7 @@ public final class ProcessTerminal: Terminal {
         self.escapeFlushGeneration &+= 1
         let generation = self.escapeFlushGeneration
         let timeout = self.pendingInput == "\u{001B}"
-            ? self.loneEscapeTimeoutMilliseconds
+            ? self.escapeAmbiguityTimeoutMilliseconds
             : Self.incompleteEscapeSequenceTimeoutMilliseconds
         let workItem = DispatchWorkItem { [weak self] in
             guard let self, self.escapeFlushGeneration == generation else { return }
