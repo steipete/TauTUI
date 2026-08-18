@@ -5,7 +5,7 @@ import Testing
 private final class ManualEscapeFlushScheduler {
     private struct ScheduledWork {
         let deadline: Int
-        let workItem: DispatchWorkItem
+        let action: () -> Void
     }
 
     private var now = 0
@@ -13,16 +13,19 @@ private final class ManualEscapeFlushScheduler {
 
     var delays: [Int] = []
 
-    func schedule(milliseconds: Int, workItem: DispatchWorkItem) {
+    func schedule(milliseconds: Int, action: @escaping () -> Void) -> DispatchWorkItem {
         self.delays.append(milliseconds)
-        self.scheduled.append(ScheduledWork(deadline: self.now + milliseconds, workItem: workItem))
+        self.scheduled.append(ScheduledWork(deadline: self.now + milliseconds, action: action))
+        return DispatchWorkItem {}
     }
 
     func advance(milliseconds: Int) {
         self.now += milliseconds
         let due = self.scheduled.filter { $0.deadline <= self.now }
         self.scheduled.removeAll { $0.deadline <= self.now }
-        due.forEach { $0.workItem.perform() }
+        // Run the callback independently of its cancelled production handle to model
+        // work that already began while cancellation raced with the dispatch queue.
+        due.forEach { $0.action() }
     }
 }
 
@@ -101,9 +104,9 @@ struct TerminalInputBufferTests {
         scheduler.advance(milliseconds: 5)
         #expect(parser.parseForTests("[").isEmpty)
 
-        // Dispatch cancellation does not guarantee that an already-enqueued work item
-        // cannot begin. Exercise the stale item explicitly before the CSI completes.
-        scheduler.advance(milliseconds: 5)
+        // Advance through the original local timer's 30 ms deadline. The test scheduler
+        // executes its callback despite cancellation to model an already-started item.
+        scheduler.advance(milliseconds: 25)
         let events = parser.parseForTests("1;3D")
 
         #expect(events.count == 1)

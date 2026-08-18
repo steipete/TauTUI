@@ -94,7 +94,7 @@ public final class ProcessTerminal: Terminal {
     private var escapeFlushGeneration: UInt = 0
 
     private let escapeAmbiguityTimeoutMilliseconds: Int
-    private let escapeFlushScheduler: (Int, DispatchWorkItem) -> Void
+    private let escapeFlushScheduler: (Int, @escaping () -> Void) -> DispatchWorkItem
 
     /// Emit `.raw` events for debugging/inspection (e.g. KeyTester).
     /// Off by default because `.key`/`.paste` already cover functional input.
@@ -127,10 +127,12 @@ public final class ProcessTerminal: Terminal {
         inputFileDescriptor: Int32,
         outputFileDescriptor: Int32,
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        escapeFlushScheduler: @escaping (Int, DispatchWorkItem) -> Void = { milliseconds, workItem in
+        escapeFlushScheduler: @escaping (Int, @escaping () -> Void) -> DispatchWorkItem = { milliseconds, action in
+            let workItem = DispatchWorkItem(block: action)
             DispatchQueue.main.asyncAfter(
                 deadline: .now() + .milliseconds(milliseconds),
                 execute: workItem)
+            return workItem
         })
     {
         self.inputFD = FileDescriptor(rawValue: inputFileDescriptor)
@@ -454,7 +456,7 @@ public final class ProcessTerminal: Terminal {
         let timeout = self.pendingInput == "\u{001B}"
             ? self.escapeAmbiguityTimeoutMilliseconds
             : Self.incompleteEscapeSequenceTimeoutMilliseconds
-        let workItem = DispatchWorkItem { [weak self] in
+        let workItem = self.escapeFlushScheduler(timeout) { [weak self] in
             guard let self, self.escapeFlushGeneration == generation else { return }
             self.escapeFlushWorkItem = nil
             guard self.pendingInput.first == "\u{001B}" else { return }
@@ -463,7 +465,6 @@ public final class ProcessTerminal: Terminal {
             self.processPendingInput()
         }
         self.escapeFlushWorkItem = workItem
-        self.escapeFlushScheduler(timeout, workItem)
     }
 
     private func cancelEscapeFlush() {
