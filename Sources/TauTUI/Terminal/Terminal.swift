@@ -91,6 +91,10 @@ public final class ProcessTerminal: Terminal {
     private var isInBracketedPaste = false
     private var pasteBuffer = ""
     private var escapeFlushWorkItem: DispatchWorkItem?
+    private var escapeFlushGeneration: UInt = 0
+
+    private let escapeAmbiguityTimeoutMilliseconds: Int
+    private let escapeFlushScheduler: (Int, @escaping () -> Void) -> DispatchWorkItem
 
     /// Emit `.raw` events for debugging/inspection (e.g. KeyTester).
     /// Off by default because `.key`/`.paste` already cover functional input.
@@ -109,15 +113,40 @@ public final class ProcessTerminal: Terminal {
     private static let optionEnterCSI = "\u{001B}[13;3~"
     private static let optionEnterMeta = "\u{001B}\r"
 
+    private static let localEscapeAmbiguityTimeoutMilliseconds = 30
+    private static let sshEscapeAmbiguityTimeoutMilliseconds = 100
+    private static let incompleteEscapeSequenceTimeoutMilliseconds = 50
+
     public convenience init() {
         self.init(
             inputFileDescriptor: FileDescriptor.standardInput.rawValue,
             outputFileDescriptor: FileDescriptor.standardOutput.rawValue)
     }
 
-    init(inputFileDescriptor: Int32, outputFileDescriptor: Int32) {
+    init(
+        inputFileDescriptor: Int32,
+        outputFileDescriptor: Int32,
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        escapeFlushScheduler: @escaping (Int, @escaping () -> Void) -> DispatchWorkItem = { milliseconds, action in
+            let workItem = DispatchWorkItem(block: action)
+            DispatchQueue.main.asyncAfter(
+                deadline: .now() + .milliseconds(milliseconds),
+                execute: workItem)
+            return workItem
+        })
+    {
         self.inputFD = FileDescriptor(rawValue: inputFileDescriptor)
         self.outputFD = FileDescriptor(rawValue: outputFileDescriptor)
+        self.escapeAmbiguityTimeoutMilliseconds = Self.resolveEscapeAmbiguityTimeoutMilliseconds(
+            environment: environment)
+        self.escapeFlushScheduler = escapeFlushScheduler
+    }
+
+    static func resolveEscapeAmbiguityTimeoutMilliseconds(environment: [String: String]) -> Int {
+        let isSSH = environment["SSH_CONNECTION"]?.isEmpty == false || environment["SSH_TTY"]?.isEmpty == false
+        return isSSH
+            ? Self.sshEscapeAmbiguityTimeoutMilliseconds
+            : Self.localEscapeAmbiguityTimeoutMilliseconds
     }
 
     /// Testing helper: parse a raw input string into `TerminalInput` events
@@ -198,8 +227,7 @@ public final class ProcessTerminal: Terminal {
 
         self.inputHandler = nil
         self.resizeHandler = nil
-        self.escapeFlushWorkItem?.cancel()
-        self.escapeFlushWorkItem = nil
+        self.cancelEscapeFlush()
         self.pendingUTF8Bytes.removeAll(keepingCapacity: false)
         self.pendingInput.removeAll(keepingCapacity: false)
         self.pasteBuffer.removeAll(keepingCapacity: false)
@@ -328,8 +356,7 @@ public final class ProcessTerminal: Terminal {
 
     fileprivate func handleRawChunk(_ chunk: String) {
         guard !chunk.isEmpty else { return }
-        self.escapeFlushWorkItem?.cancel()
-        self.escapeFlushWorkItem = nil
+        self.cancelEscapeFlush()
         if self.emitsRawInputEvents {
             self.inputHandler?(.raw(chunk))
         }
@@ -424,8 +451,13 @@ public final class ProcessTerminal: Terminal {
 
     private func scheduleIncompleteEscapeFlush() {
         guard self.escapeFlushWorkItem == nil else { return }
-        let workItem = DispatchWorkItem { [weak self] in
-            guard let self else { return }
+        self.escapeFlushGeneration &+= 1
+        let generation = self.escapeFlushGeneration
+        let timeout = self.pendingInput == "\u{001B}"
+            ? self.escapeAmbiguityTimeoutMilliseconds
+            : Self.incompleteEscapeSequenceTimeoutMilliseconds
+        let workItem = self.escapeFlushScheduler(timeout) { [weak self] in
+            guard let self, self.escapeFlushGeneration == generation else { return }
             self.escapeFlushWorkItem = nil
             guard self.pendingInput.first == "\u{001B}" else { return }
             let escape = self.pendingInput.removeFirst()
@@ -433,7 +465,12 @@ public final class ProcessTerminal: Terminal {
             self.processPendingInput()
         }
         self.escapeFlushWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(30), execute: workItem)
+    }
+
+    private func cancelEscapeFlush() {
+        self.escapeFlushWorkItem?.cancel()
+        self.escapeFlushWorkItem = nil
+        self.escapeFlushGeneration &+= 1
     }
 
     private func handleCharacter(_ char: Character) {

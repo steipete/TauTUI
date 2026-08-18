@@ -1,6 +1,6 @@
-# pi-tui sync log (Aug 12, 2026)
+# pi-tui sync log (Aug 13, 2026)
 
-Context: the current upstream checkout lives at `../../oss/pi-mono` (`/Users/steipete/Projects/oss/pi-mono`) relative to this repo. Current `origin/main` inspected: `581d75a89` on **2026-08-12**; the latest released TUI entry is **0.84.1 (2026-08-07)**.
+Context: the current upstream checkout lives at `../../oss/pi-mono` (`/Users/steipete/Projects/oss/pi-mono`) relative to this repo. Current `origin/main` inspected: `9d2ec7ffa` on **2026-08-13**; the latest released TUI entry is **0.84.1 (2026-08-07)**.
 
 ## Changes synchronized in TauTUI 0.2.2
 
@@ -11,6 +11,7 @@ Context: the current upstream checkout lives at `../../oss/pi-mono` (`/Users/ste
 - `setText` and marker edits discard stale hidden paste payloads; submit expansion inserts `$` and backslashes literally instead of treating them as regular-expression replacement syntax.
 - Open autocomplete results re-query after cursor movement and destructive edits so accepting a suggestion cannot apply a result for an old cursor position.
 - ProcessTerminal now treats descriptor input as a byte stream, retaining split UTF-8 scalars, CSI/Kitty sequences, and bracketed-paste delimiters between reads.
+- Escape/Option ambiguity retains its 30 ms local window, while SSH-split Option chords and incomplete escape sequences use independent 100 ms and 50 ms reassembly windows.
 - The main-screen renderer now redraws on height-only terminal resizes so its viewport model stays aligned.
 - Full and partial main-screen redraws now enforce the same visible-width invariant before writing component output.
 - Background styles now reapply only after internal resets and always terminate with their configured reset sequence.
