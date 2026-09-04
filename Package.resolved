@@ -1,5 +1,5 @@
 {
-  "originHash" : "0c34f1f7ba2fce85fe3324a6d7c3451a7e97e526414f85aed917266dd581261b",
+  "originHash" : "864ac39512af27ed19b0cf5bf81a26c5f70b74f1e4d3e3fbfec192073326f843",
   "pins" : [
     {
       "identity" : "swift-cmark",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "b5544ba79a70a0cb3563e75bf26dc198d6b40ed3",
-        "version" : "1.7.4"
+        "revision" : "869129b7bf4ecc57b97d0193ad29690ca2134750",
+        "version" : "1.8.1"
       }
     }
   ],
