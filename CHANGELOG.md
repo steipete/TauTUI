@@ -3,6 +3,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [0.2.2] - Unreleased
+- Refresh the swift-system dependency pin from 1.7.4 to 1.8.1, including upstream Swift 6 concurrency and older macOS SDK compatibility fixes.
 - Markdown code blocks now wrap styled content and fences to the render width instead of violating TUI viewport invariants while streaming.
 - Image rendering now honors `maxHeightCells`, reducing width proportionally to preserve aspect ratio, and applies a bounded default height.
 - Editor pastes are now inserted atomically without per-character autocomplete work, stale hidden paste payloads are discarded when markers or editor text change, and payloads containing `$` or backslashes expand literally on submit.
