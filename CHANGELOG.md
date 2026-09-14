@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - Unreleased
+
 ## [0.2.2] - 2026-09-13
 **Highlights:** Markdown and image rendering stay within terminal bounds, while paste handling preserves Unicode and literal payloads reliably.
 
