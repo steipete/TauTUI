@@ -38,7 +38,7 @@ let package = Package(
     name: "Demo",
     platforms: [.macOS(.v13)],
     dependencies: [
-        .package(url: "https://github.com/steipete/TauTUI.git", from: "0.2.0"),
+        .package(url: "https://github.com/steipete/TauTUI.git", from: "0.2.2"),
     ],
     targets: [
         .executableTarget(

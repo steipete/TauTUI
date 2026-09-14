@@ -2,8 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.2] - Unreleased
-- Refresh the swift-system dependency pin from 1.7.4 to 1.8.1, including upstream Swift 6 concurrency and older macOS SDK compatibility fixes.
+## [0.2.2] - 2026-09-13
+**Highlights:** Markdown and image rendering stay within terminal bounds, while paste handling preserves Unicode and literal payloads reliably.
+
 - Markdown code blocks now wrap styled content and fences to the render width instead of violating TUI viewport invariants while streaming.
 - Image rendering now honors `maxHeightCells`, reducing width proportionally to preserve aspect ratio, and applies a bounded default height.
 - Editor pastes are now inserted atomically without per-character autocomplete work, stale hidden paste payloads are discarded when markers or editor text change, and payloads containing `$` or backslashes expand literally on submit.
@@ -13,13 +14,14 @@ All notable changes to this project will be documented in this file.
 - ProcessTerminal now preserves the local Escape/Option ambiguity window while giving SSH-split Option chords and incomplete control sequences separate reassembly windows, without letting stale cancelled timers corrupt newer input.
 - Background styles now always finish with a reset instead of leaking their color into later terminal output.
 - ANSI-aware wrapping now treats CRLF and CR as line endings, preserving line boundaries from cross-platform terminal output.
-- ChatDemo no longer retains its view model through the editor submit callback and builds without Swift 6.4 capture warnings.
 - Input scrolling now uses terminal columns so CJK, fullwidth, and emoji text cannot overflow the viewport.
 - ProcessTerminal shutdown is now idempotent and no longer writes terminal-mode resets when the terminal was never started.
 - TUI sessions no longer render after shutdown, reuse stale render state after restart, or leave old rows visible when content becomes empty.
 - Partial TUI updates now clear removed trailing rows, including empty spacer rows, without leaving stale terminal content behind.
 - Height-only terminal resizes now trigger a full redraw so the main-screen viewport stays aligned.
 - Full and partial terminal redraws now enforce the same visible-width invariant before writing component output.
+- ChatDemo no longer retains its view model through the editor submit callback and builds without Swift 6.4 capture warnings.
+- Refresh the swift-system dependency pin from 1.7.4 to 1.8.1, including upstream Swift 6 concurrency and older macOS SDK compatibility fixes.
 
 ## [0.2.1] - 2026-07-15
 - TruncatedText no longer emits a full three-dot ellipsis when the available width is 1 or 2, which had made the rendered line wider than the requested width; it now fills with as many dots as fit, matching the public `truncate` helper. Thanks @devYRPauli.
