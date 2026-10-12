@@ -21,7 +21,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build:
+    runs-on: macos-26
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - name: Select exact source for verification
+        id: source
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+          LIVE_DISPATCH: ${{ github.event_name == 'workflow_dispatch' && !inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          version=${VERSION#v}
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]] || exit 1
+          if [[ "$LIVE_DISPATCH" == true ]]; then
+            echo "ref=refs/tags/v$version" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+          persist-credentials: false
+      - name: Build and test the Swift package
+        run: bash scripts/verify-release.sh
+
   release:
+    needs: build
     permissions:
       actions: read
       checks: read
@@ -35,5 +63,3 @@ jobs:
       require-signed-tag: true
       strict-checks: true
       ci-check-events: '["push"]'
-      test-runs-on: macos-26
-      test-command: bash scripts/verify-release.sh
