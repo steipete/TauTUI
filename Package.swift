@@ -3,9 +3,6 @@
 
 import PackageDescription
 
-/// Current package version
-private let packageVersion = "0.2.3"
-
 let package = Package(
     name: "TauTUI",
     platforms: [
