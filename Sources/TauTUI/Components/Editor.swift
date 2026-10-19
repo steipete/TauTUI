@@ -114,8 +114,7 @@ public final class Editor: Component {
     }
 
     private func navigateHistory(_ direction: Int) {
-        guard !self.history.isEmpty else { return }
-        guard direction == -1 || direction == 1 else { return }
+        guard !self.history.isEmpty, direction == -1 || direction == 1 else { return }
 
         let newIndex = self.historyIndex - direction
         guard newIndex >= -1, newIndex < self.history.count else { return }

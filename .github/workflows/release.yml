@@ -22,7 +22,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-26
+    runs-on: xcode-27
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
     permissions:
       contents: read
     timeout-minutes: 30

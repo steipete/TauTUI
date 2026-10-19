@@ -250,6 +250,8 @@ public protocol Terminal: AnyObject {
 
 ## Development
 
+macOS CI and release verification use the default Xcode 27 toolchain on the Apple silicon `xcode-27` runner, retaining the macOS 13 deployment target. Linux CI covers Swift 6.2 and 6.3.3, including the package's minimum supported toolchain.
+
 ```bash
 swift build
 swift test

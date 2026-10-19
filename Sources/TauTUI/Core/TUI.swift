@@ -80,8 +80,7 @@ public final class TUI: Container {
     }
 
     public func requestRender() {
-        guard self.isRunning else { return }
-        guard !self.renderRequested else { return }
+        guard self.isRunning, !self.renderRequested else { return }
         self.renderRequested = true
         let generation = self.sessionGeneration
         self.scheduleRender { @MainActor [weak self] in

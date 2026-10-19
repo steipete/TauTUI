@@ -7,14 +7,9 @@ on:
 
 jobs:
   lint:
-    runs-on: macos-latest
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v7
-
-      - name: Install Swift 6.3.3
-        uses: SwiftyLab/setup-swift@v1.14.0
-        with:
-          swift-version: "6.3.3"
 
       - name: Install linters (SwiftLint & SwiftFormat)
         run: |
@@ -31,15 +26,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        swift-version: ["6.2", "6.3.3"]
+        include:
+          - os: ubuntu-latest
+            swift-version: "6.2"
+          - os: ubuntu-latest
+            swift-version: "6.3.3"
+          - os: xcode-27
+            swift-version: default
     runs-on: ${{ matrix.os }}
     needs: lint
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
 
     steps:
       - uses: actions/checkout@v7
 
       - name: Install Swift ${{ matrix.swift-version }}
+        if: runner.os == 'Linux'
         uses: SwiftyLab/setup-swift@v1.14.0
         with:
           swift-version: ${{ matrix.swift-version }}
