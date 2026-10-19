@@ -543,8 +543,7 @@ public final class ProcessTerminal: Terminal {
 
     private func parseCellSizeResponse(_ sequence: String) -> (widthPx: Int, heightPx: Int)? {
         // Response format: ESC [ 6 ; height ; width t  (from CSI 16 t query)
-        guard sequence.hasPrefix("\u{001B}[") else { return nil }
-        guard sequence.hasSuffix("t") else { return nil }
+        guard sequence.hasPrefix("\u{001B}["), sequence.hasSuffix("t") else { return nil }
 
         let body = sequence.dropFirst(2)
         let paramString = body.dropLast()

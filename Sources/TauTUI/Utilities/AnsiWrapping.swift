@@ -6,8 +6,7 @@ public enum AnsiWrapping {
     /// Mirrors pi-mono `wrapTextWithAnsi` (word-wrapping, no padding).
     /// Tabs are normalized to three spaces to match pi-tui.
     public static func wrapText(_ text: String, width: Int, tabSize: Int = 3) -> [String] {
-        guard width > 0 else { return [""] }
-        guard !text.isEmpty else { return [""] }
+        guard width > 0, !text.isEmpty else { return [""] }
 
         let normalizedLineEndings = text
             .replacingOccurrences(of: "\r\n", with: "\n")
@@ -214,9 +213,8 @@ private final class AnsiCodeTracker {
 
     // swiftlint:disable cyclomatic_complexity
     func process(_ ansiCode: String) {
-        guard ansiCode.hasSuffix("m") else { return }
-        guard let start = ansiCode.range(of: "\u{001B}[")?.upperBound else { return }
-        guard let end = ansiCode.lastIndex(of: "m"), end > start else { return }
+        guard ansiCode.hasSuffix("m"), let start = ansiCode.range(of: "\u{001B}[")?.upperBound,
+              let end = ansiCode.lastIndex(of: "m"), end > start else { return }
 
         let params = String(ansiCode[start..<end])
         if params.isEmpty || params == "0" {

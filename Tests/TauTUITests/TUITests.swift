@@ -229,10 +229,12 @@ struct TUIRenderingTests {
     }
 
     @Test
-    func `key event normalization meta prefix`() {
+    func `key event normalization meta prefix`() throws {
         // ESC b -> Option+Left, ESC f -> Option+Right, ESC d -> Option+Delete, ESC DEL -> Option+Backspace
         let parser = ProcessTerminal()
-        let events = parser.parseForTests("\u{001B}b\u{001B}f\u{001B}d" + String(bytes: [0x1B, 0x7F], encoding: .utf8)!)
+        let events = try parser.parseForTests("\u{001B}b\u{001B}f\u{001B}d" + #require(String(
+            bytes: [0x1B, 0x7F],
+            encoding: .utf8)))
         #expect(events
             .contains(where: { if case let .key(.arrowLeft, m) = $0 { return m.contains(.option) }; return false }))
         #expect(events
