@@ -56,6 +56,16 @@ struct TruncatedTextTests {
     }
 
     @Test
+    func `charset escape does not count toward the label width`() {
+        let text = "\u{001B}(B" + String(repeating: "A", count: 20)
+        let truncated = TruncatedText.truncate(text, toWidth: 10)
+        let plain = Ansi.stripCodes(truncated)
+        #expect(plain.filter { $0 == "A" }.count == 7)
+        #expect(plain.contains("(") == false)
+        #expect(VisibleWidth.measure(truncated) <= 10)
+    }
+
+    @Test
     func `fits exactly without ellipsis`() {
         let text = TruncatedText(text: "Hello world", paddingX: 1, paddingY: 0)
         let lines = text.render(width: 30)

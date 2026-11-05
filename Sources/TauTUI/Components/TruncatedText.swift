@@ -123,7 +123,26 @@ public final class TruncatedText: Component {
     }
 
     private static func extractAnsi(in text: String, from index: String.Index) -> (code: String, next: String.Index)? {
-        AnsiWrapping.extractAnsi(from: text, startingAt: index)
+        if let csi = AnsiWrapping.extractAnsi(from: text, startingAt: index) {
+            return csi
+        }
+        guard text[index] == "\u{001B}" else { return nil }
+        let afterEscape = text.index(after: index)
+        guard afterEscape < text.endIndex else { return nil }
+        let introducer = text[afterEscape]
+        if introducer == "[" {
+            return nil
+        }
+        if introducer == "(" || introducer == ")" {
+            let designator = text.index(after: afterEscape)
+            guard designator < text.endIndex else { return nil }
+            if "012AB".contains(text[designator]) {
+                let next = text.index(after: designator)
+                return (String(text[index..<next]), next)
+            }
+        }
+        let next = text.index(after: afterEscape)
+        return (String(text[index..<next]), next)
     }
 
     private func applyBackground(_ line: String) -> String {
