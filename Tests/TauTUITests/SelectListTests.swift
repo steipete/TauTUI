@@ -28,6 +28,16 @@ struct SelectListTests {
     }
 
     @Test
+    func `long label stays within the terminal width`() {
+        let label = String(repeating: "A", count: 200)
+        let list = SelectList(items: [SelectItem(value: "a", label: label)], maxVisible: 1)
+        let rendered = list.render(width: 80)
+        for line in rendered {
+            #expect(VisibleWidth.measure(Ansi.stripCodes(line)) <= 80)
+        }
+    }
+
+    @Test
     func `description alignment consistent between selected and unselected`() {
         let items = [
             SelectItem(value: "a", label: "Alpha", description: "first item"),
