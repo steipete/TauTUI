@@ -38,6 +38,28 @@ struct SelectListTests {
     }
 
     @Test
+    func `selected label keeps its letters and sgr sequences`() {
+        let label = String(repeating: "A", count: 200)
+        let list = SelectList(items: [SelectItem(value: "a", label: label)], maxVisible: 1)
+
+        let wide = list.render(width: 80)[0]
+        #expect(Ansi.stripCodes(wide).filter { $0 == "A" }.count == 75)
+        #expect(wide.contains("\u{001B}[34m"))
+        #expect(wide.contains("\u{001B}[1m"))
+        #expect(wide.contains("\u{001B}[0m..."))
+        #expect(Ansi.stripCodes(wide).contains("34m") == false)
+
+        let narrow = list.render(width: 10)[0]
+        #expect(Ansi.stripCodes(narrow).filter { $0 == "A" }.count == 5)
+        #expect(Ansi.stripCodes(narrow).contains("34m") == false)
+
+        let tight = list.render(width: 8)[0]
+        #expect(Ansi.stripCodes(tight).filter { $0 == "A" }.count == 3)
+        #expect(tight.contains("\u{001B}[0m"))
+        #expect(Ansi.stripCodes(tight).contains("34m") == false)
+    }
+
+    @Test
     func `description alignment consistent between selected and unselected`() {
         let items = [
             SelectItem(value: "a", label: "Alpha", description: "first item"),
