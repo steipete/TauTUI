@@ -28,6 +28,20 @@ struct AnsiWrappingTests {
     }
 
     @Test
+    func `splits a leading whitespace run to the line width`() {
+        let spaces = String(repeating: " ", count: 81)
+        let wrapped = AnsiWrapping.wrapText(spaces, width: 78)
+        #expect(wrapped.map { VisibleWidth.measure($0) } == [78, 3])
+    }
+
+    @Test
+    func `splits a whitespace run that is wider than the line`() {
+        let text = "hi" + String(repeating: " ", count: 10)
+        let wrapped = AnsiWrapping.wrapText(text, width: 8)
+        #expect(wrapped.map { VisibleWidth.measure($0) } == [2, 8, 2])
+    }
+
+    @Test
     func `apply background pads and keeps resets`() {
         let bg = AnsiStyling.Background.rgb(0, 255, 0)
         let line = "\u{001B}[1mhello\u{001B}[0m world"

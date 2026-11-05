@@ -445,4 +445,26 @@ struct TUIRenderingTests {
         let output = outputPipe.fileHandleForReading.readDataToEndOfFile()
         #expect(output.isEmpty)
     }
+
+    @MainActor @Test
+    func `leading tabs stay within the terminal width`() throws {
+        let width = 80
+        let tabs = String(repeating: "\t", count: 27)
+        let terminal = VirtualTerminal(columns: width, rows: 24)
+        let tui = TUI(terminal: terminal, renderScheduler: { $0() })
+        let text = Text(text: tabs, paddingY: 0)
+        tui.addChild(text)
+
+        try tui.start()
+
+        let lines = text.render(width: width)
+        let widths = lines.map { VisibleWidth.measure($0) }
+        #expect(widths == [80, 80])
+        #expect(TUI.firstRenderWidthViolation(in: lines, width: width) == nil)
+
+        let contentWidth = max(1, width - (text.paddingX * 2))
+        let wrapped = AnsiWrapping.wrapText(tabs, width: contentWidth)
+        #expect(wrapped.map { VisibleWidth.measure($0) } == [78, 3])
+        tui.stop()
+    }
 }
