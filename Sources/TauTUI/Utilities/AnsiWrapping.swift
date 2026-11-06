@@ -51,7 +51,10 @@ public enum AnsiWrapping {
             let tokenVisibleLength = VisibleWidth.measure(token)
             let isWhitespace = token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
-            if tokenVisibleLength > width, !isWhitespace {
+            // A whitespace run is one token. Split an oversized run only when
+            // the line has no visible text yet. A run after visible text is
+            // dropped below, so it does not become a blank row.
+            if tokenVisibleLength > width, !isWhitespace || currentVisibleLength == 0 {
                 if !currentLine.isEmpty {
                     if let lineEndReset = tracker.getLineEndReset(), !lineEndReset.isEmpty {
                         currentLine += lineEndReset
