@@ -35,10 +35,10 @@ struct AnsiWrappingTests {
     }
 
     @Test
-    func `splits a whitespace run that is wider than the line`() {
-        let text = "hi" + String(repeating: " ", count: 10)
+    func `drops an oversized separator after visible text`() {
+        let text = "hi" + String(repeating: " ", count: 10) + "ok"
         let wrapped = AnsiWrapping.wrapText(text, width: 8)
-        #expect(wrapped.map { VisibleWidth.measure($0) } == [2, 8, 2])
+        #expect(wrapped == ["hi", "ok"])
     }
 
     @Test
