@@ -103,4 +103,31 @@ struct SettingsListTests {
         #expect(selectedLine?.contains("Pick") == true)
         #expect(mainLines.joined(separator: "\n").contains("chosen"))
     }
+
+    @Test
+    func `narrow width keeps the footer and a long label inside the line`() {
+        let list = SettingsList(
+            items: [
+                .init(
+                    id: "mode",
+                    label: "A very long setting label",
+                    currentValue: "enabled-value"),
+            ],
+            onChange: { _, _ in },
+            onCancel: {})
+
+        let wide = list.render(width: 80)
+        #expect(wide.joined(separator: "\n").contains("Esc to cancel"))
+        for line in wide {
+            #expect(VisibleWidth.measure(line) <= 80)
+        }
+
+        for width in [0, 1, 8, 20, 38] {
+            let lines = list.render(width: width)
+            #expect(!lines.isEmpty)
+            for line in lines {
+                #expect(VisibleWidth.measure(line) <= width)
+            }
+        }
+    }
 }
