@@ -85,7 +85,8 @@ public final class Image: Component {
                 mimeType: self.mimeType,
                 dimensions: self.dimensions,
                 filename: self.options.filename)
-            lines = [self.theme.fallbackColor(fallback)]
+            let clipped = TruncatedText.truncate(fallback, toWidth: max(0, width))
+            lines = [self.theme.fallbackColor(clipped)]
         }
 
         self.cachedLines = lines

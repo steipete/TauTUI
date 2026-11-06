@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import TauTUI
 
-@Suite("TerminalImage")
+@Suite("TerminalImage", .serialized)
 struct TerminalImageTests {
     @Test
     func `detect capabilities kitty and I term 2`() {
@@ -113,5 +113,29 @@ struct TerminalImageTests {
             options: .init(maxWidthCells: 10, maxHeightCells: 3))
         #expect(iterm?.rows == 3)
         #expect(iterm?.sequence.contains("width=1;height=auto") == true)
+    }
+
+    @Test
+    func `fallback text stays within the render width`() {
+        TerminalImage.setCapabilitiesForTests(.init(images: nil, trueColor: true, hyperlinks: true))
+        defer { TerminalImage.resetCapabilitiesCache() }
+
+        let image = Image(
+            base64Data: "AAAA",
+            mimeType: "image/png",
+            options: .init(filename: String(repeating: "n", count: 80)),
+            dimensions: .init(widthPx: 4000, heightPx: 3000))
+
+        let wide = image.render(width: 80)
+        #expect(wide.joined().contains("[Image:"))
+        for line in wide {
+            #expect(VisibleWidth.measure(line) <= 80)
+        }
+
+        for width in [0, 1, 8, 20] {
+            for line in image.render(width: width) {
+                #expect(VisibleWidth.measure(line) <= width)
+            }
+        }
     }
 }
