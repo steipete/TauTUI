@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.3] - Unreleased
 
+- Image fallback text is clipped to the render width when the terminal has no image protocol.
 - Move macOS CI and release verification to `xcode-27` while preserving macOS 13 support and Swift 6.2/6.3.3 coverage on Linux.
 
 ## [0.2.2] - 2026-09-13
