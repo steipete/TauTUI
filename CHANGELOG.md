@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.3] - Unreleased
 
+- Settings lists clip the footer hint and the label column to the render width, so a pane narrower than the hint does not overflow.
 - Move macOS CI and release verification to `xcode-27` while preserving macOS 13 support and Swift 6.2/6.3.3 coverage on Linux.
 
 ## [0.2.2] - 2026-09-13

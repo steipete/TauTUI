@@ -132,7 +132,13 @@ public final class SettingsList: Component {
             min(self.selectedIndex - (self.maxVisible / 2), self.items.count - self.maxVisible))
         let endIndex = min(startIndex + self.maxVisible, self.items.count)
 
-        let maxLabelWidth = min(30, self.items.map { VisibleWidth.measure($0.label) }.max() ?? 0)
+        let prefixBudget = max(VisibleWidth.measure(self.theme.cursor), VisibleWidth.measure("  "))
+        let separator = "  "
+        let separatorWidth = VisibleWidth.measure(separator)
+        let valueChrome = 2
+        let labelBudget = max(0, width - prefixBudget - separatorWidth - valueChrome)
+        let naturalLabel = self.items.map { VisibleWidth.measure($0.label) }.max() ?? 0
+        let maxLabelWidth = min(30, naturalLabel, labelBudget)
 
         for index in startIndex..<endIndex {
             let item = self.items[index]
@@ -141,13 +147,13 @@ public final class SettingsList: Component {
             let prefix = isSelected ? self.theme.cursor : "  "
             let prefixWidth = VisibleWidth.measure(prefix)
 
-            let labelPadCount = max(0, maxLabelWidth - VisibleWidth.measure(item.label))
-            let labelPadded = item.label + String(repeating: " ", count: labelPadCount)
+            let labelShown = TruncatedText.truncate(item.label, toWidth: maxLabelWidth)
+            let labelPadCount = max(0, maxLabelWidth - VisibleWidth.measure(labelShown))
+            let labelPadded = labelShown + String(repeating: " ", count: labelPadCount)
             let labelText = self.theme.label(labelPadded, isSelected)
 
-            let separator = "  "
-            let usedWidth = prefixWidth + maxLabelWidth + VisibleWidth.measure(separator)
-            let valueMaxWidth = max(0, width - usedWidth - 2)
+            let usedWidth = prefixWidth + maxLabelWidth + separatorWidth
+            let valueMaxWidth = max(0, width - usedWidth - valueChrome)
             let valueText = self.theme.value(
                 TruncatedText.truncate(item.currentValue, toWidth: valueMaxWidth),
                 isSelected)
@@ -166,8 +172,9 @@ public final class SettingsList: Component {
         }
 
         lines.append("")
-        lines.append(self.theme.hint("  Enter/Space to change · Esc to cancel"))
-        return lines
+        let hint = "  Enter/Space to change · Esc to cancel"
+        lines.append(self.theme.hint(TruncatedText.truncate(hint, toWidth: max(0, width))))
+        return lines.map { TruncatedText.truncate($0, toWidth: max(0, width)) }
     }
 
     private func activateSelectedItem() {
