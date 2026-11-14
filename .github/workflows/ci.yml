@@ -35,7 +35,6 @@ jobs:
           - os: xcode-27
             swift-version: default
     runs-on: ${{ matrix.os }}
-    needs: lint
     env:
       MACOSX_DEPLOYMENT_TARGET: '13.0'
 
