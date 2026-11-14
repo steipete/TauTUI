@@ -13,8 +13,8 @@ jobs:
 
       - name: Install linters (SwiftLint & SwiftFormat)
         run: |
-          brew update
-          brew install swiftlint swiftformat
+          bash scripts/install-linters.sh "$RUNNER_TEMP/tautui-linters"
+          echo "$RUNNER_TEMP/tautui-linters" >> "$GITHUB_PATH"
 
       - name: SwiftLint
         run: swiftlint --config .swiftlint.yml

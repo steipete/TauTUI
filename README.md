@@ -253,6 +253,16 @@ public protocol Terminal: AnyObject {
 
 macOS CI and release verification use the default Xcode 27 toolchain on the Apple silicon `xcode-27` runner, retaining the macOS 13 deployment target. Linux CI covers Swift 6.2 and 6.3.3, including the package's minimum supported toolchain.
 
+On macOS, install the same checksum-verified linters as CI (SwiftFormat 0.64.3 and SwiftLint 0.65.1):
+
+```bash
+bash scripts/install-linters.sh
+.build/linters/swiftformat --lint . --config .swiftformat
+.build/linters/swiftlint --config .swiftlint.yml
+```
+
+The versions and archive checksums live in `scripts/install-linters.sh`; update them together after validating both lint configurations.
+
 ```bash
 swift build
 swift test
