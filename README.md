@@ -242,6 +242,7 @@ public protocol Terminal: AnyObject {
 
 - `ProcessTerminal` puts stdin in raw mode, enables Kitty keyboard protocol, normalizes modifier encodings (CSI params, ESC-prefix meta), gives split Option chords a longer reassembly window over SSH, turns bracketed paste on/off, and emits `TerminalInput` events (`.key`, `.paste`). Raw bytes are opt-in via `emitsRawInputEvents` (used by `KeyTester`).
 - `VirtualTerminal` records writes for tests, tracks viewport/scrollback, and exposes helper methods (`flush()`, `getViewport()`, `getScrollBuffer()`, `getCursorPosition()`).
+- Oversized Kitty key codepoints are reported as unknown keys, so malformed input does not terminate the terminal session.
 
 ## Examples
 

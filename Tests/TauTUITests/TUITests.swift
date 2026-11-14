@@ -285,6 +285,16 @@ struct TUIRenderingTests {
     }
 
     @Test
+    func `kitty codepoint above UInt32 max is unknown`() {
+        let parser = ProcessTerminal()
+        let events = parser.parseForTests("\u{001B}[4294967296u")
+        #expect(events.contains(where: { event in
+            if case .key(.unknown, _) = event { return true }
+            return false
+        }))
+    }
+
+    @Test
     func `CSI parsing survives every byte split`() {
         let payload = Array("\u{001B}[1;3D".utf8)
 
