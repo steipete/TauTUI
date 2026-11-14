@@ -13,8 +13,8 @@ jobs:
 
       - name: Install linters (SwiftLint & SwiftFormat)
         run: |
-          brew update
-          brew install swiftlint swiftformat
+          bash scripts/install-linters.sh "$RUNNER_TEMP/tautui-linters"
+          echo "$RUNNER_TEMP/tautui-linters" >> "$GITHUB_PATH"
 
       - name: SwiftLint
         run: swiftlint --config .swiftlint.yml
@@ -27,14 +27,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # Match setup-swift's Ubuntu 24.04 toolchains and libxml2.so.2 ABI.
+          - os: ubuntu-24.04
             swift-version: "6.2"
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             swift-version: "6.3.3"
           - os: xcode-27
             swift-version: default
     runs-on: ${{ matrix.os }}
-    needs: lint
     env:
       MACOSX_DEPLOYMENT_TARGET: '13.0'
 

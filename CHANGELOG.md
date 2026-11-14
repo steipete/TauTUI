@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.3] - Unreleased
 
+- Treat oversized Kitty key codepoints as unknown keys instead of crashing. Thanks @SebTardif.
+- Update swift-markdown/swift-cmark to 0.9.0, swift-displaywidth to 0.2.0, and swift-system to 1.9.0.
+- Pin CI and local linters to SwiftFormat 0.64.3 and SwiftLint 0.65.1 to prevent upstream rule changes from breaking unchanged code.
 - Move macOS CI and release verification to `xcode-27` while preserving macOS 13 support and Swift 6.2/6.3.3 coverage on Linux.
 
 ## [0.2.2] - 2026-09-13

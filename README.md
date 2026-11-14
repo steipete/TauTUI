@@ -242,6 +242,7 @@ public protocol Terminal: AnyObject {
 
 - `ProcessTerminal` puts stdin in raw mode, enables Kitty keyboard protocol, normalizes modifier encodings (CSI params, ESC-prefix meta), gives split Option chords a longer reassembly window over SSH, turns bracketed paste on/off, and emits `TerminalInput` events (`.key`, `.paste`). Raw bytes are opt-in via `emitsRawInputEvents` (used by `KeyTester`).
 - `VirtualTerminal` records writes for tests, tracks viewport/scrollback, and exposes helper methods (`flush()`, `getViewport()`, `getScrollBuffer()`, `getCursorPosition()`).
+- Oversized Kitty key codepoints are reported as unknown keys, so malformed input does not terminate the terminal session.
 
 ## Examples
 
@@ -251,6 +252,16 @@ public protocol Terminal: AnyObject {
 ## Development
 
 macOS CI and release verification use the default Xcode 27 toolchain on the Apple silicon `xcode-27` runner, retaining the macOS 13 deployment target. Linux CI covers Swift 6.2 and 6.3.3, including the package's minimum supported toolchain.
+
+On macOS, install the same checksum-verified linters as CI (SwiftFormat 0.64.3 and SwiftLint 0.65.1):
+
+```bash
+bash scripts/install-linters.sh
+.build/linters/swiftformat --lint . --config .swiftformat
+.build/linters/swiftlint --config .swiftlint.yml
+```
+
+The versions and archive checksums live in `scripts/install-linters.sh`; update them together after validating both lint configurations.
 
 ```bash
 swift build

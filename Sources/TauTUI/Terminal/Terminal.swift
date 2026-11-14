@@ -686,7 +686,10 @@ public final class ProcessTerminal: Terminal {
         case 27: return .escape
         case 8, 127: return .backspace
         default:
-            guard codepoint >= 0, let scalar = UnicodeScalar(UInt32(codepoint)) else {
+            guard codepoint >= 0,
+                  let utf32 = UInt32(exactly: codepoint),
+                  let scalar = UnicodeScalar(utf32)
+            else {
                 return .unknown(sequence: fallbackSequence)
             }
             return .character(Character(scalar))
