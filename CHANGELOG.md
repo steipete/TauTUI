@@ -2,7 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.3] - Unreleased
+## [0.2.4] - Unreleased
+
+## [0.2.3] - 2026-11-15
+**Highlights:** Oversized Kitty key codepoints no longer crash terminal input; Swift dependencies are refreshed.
 
 - Treat oversized Kitty key codepoints as unknown keys instead of crashing. Thanks @SebTardif.
 - Update swift-markdown/swift-cmark to 0.9.0, swift-displaywidth to 0.2.0, and swift-system to 1.9.0.
