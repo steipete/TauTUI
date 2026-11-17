@@ -379,6 +379,15 @@ private final class Renderer {
                 i += 1
             }
 
+            var overflow = widths.reduce(0, +) - availableForCells
+            while overflow > 0 {
+                guard let widest = widths.indices.max(by: { widths[$0] < widths[$1] }),
+                      widths[widest] > 1
+                else { break }
+                widths[widest] -= 1
+                overflow -= 1
+            }
+
             columnWidths = widths
         }
 

@@ -145,6 +145,23 @@ struct MarkdownTests {
     }
 
     @Test
+    func `shrunk table columns stay inside the terminal width`() {
+        let huge = String(repeating: "H", count: 1000)
+        let source = """
+        | A | B | C | D |
+        | --- | --- | --- | --- |
+        | 1 | 2 | 3 | \(huge) |
+        """
+        let width = 80
+        let component = MarkdownComponent(text: source, padding: .init(horizontal: 1, vertical: 0))
+        let plain = component.render(width: width).map { Ansi.stripCodes($0) }
+        #expect(!plain.isEmpty)
+        for line in plain {
+            #expect(VisibleWidth.measure(line) <= width)
+        }
+    }
+
+    @Test
     func `extremely narrow table does not crash`() {
         let source = """
         | A | B | C |
