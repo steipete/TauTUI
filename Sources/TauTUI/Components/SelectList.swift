@@ -81,15 +81,17 @@ public final class SelectList: Component {
             let item = self.filtered[index]
             let isSelected = index == self.selectedIndex
             let prefix = isSelected ? self.theme.selectedPrefix("→ ") : "  "
-            let title = isSelected ? self.theme.selectedText(item.label) : item.label
+            let prefixWidth = VisibleWidth.measure(prefix)
+            let rawTitle = isSelected ? self.theme.selectedText(item.label) : item.label
+            let title = TruncatedText.truncate(rawTitle, toWidth: max(0, width - prefixWidth))
             var line = prefix + title
             if let description = item.description, width > 40 {
                 let titleWidth = VisibleWidth.measure(title)
-                let prefixWidth = VisibleWidth.measure(prefix)
                 let spacing = String(repeating: " ", count: max(1, 32 - titleWidth))
                 let remaining = max(0, width - (prefixWidth + titleWidth + spacing.count) - 2)
                 if remaining > 10 {
-                    line += spacing + self.theme.description(String(description.prefix(remaining)))
+                    let clipped = TruncatedText.truncate(description, toWidth: remaining)
+                    line += spacing + self.theme.description(clipped)
                 }
             }
             lines.append(line)
